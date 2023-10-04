@@ -6,9 +6,10 @@
   "mixins": [
   ],
   "client": [
-    "LevelRendererMixin",
+    "GamelRendererMixin",
     "TexturePackListMixin",
-    "WorldRendererMixin"
+    "WorldRendererMixin",
+    "ShadersRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,17 +1,19 @@
 package tfc.better_with_shaders;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.GLAllocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.shader.Shader;
 import net.minecraft.client.render.texturepack.TexturePackBase;
 import net.minecraft.client.render.texturepack.TexturePackList;
-import turniplabs.halplibe.util.ConfigHandler;
+import org.lwjgl.opengl.*;
+import tfc.better_with_shaders.util.RenderTarget;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.FloatBuffer;
 import java.util.HashMap;
-import java.util.Properties;
 
 public class ShaderManager {
 	private static final String shaderPackDir = FabricLoader.getInstance().getGameDir() + "/shader_packs/";
@@ -132,5 +134,62 @@ public class ShaderManager {
 			activePack = name;
 			init(list);
 		}
+	}
+
+	private final FloatBuffer _proj = GLAllocation.createDirectFloatBuffer(16);
+	private final FloatBuffer _modl = GLAllocation.createDirectFloatBuffer(16);
+	private final FloatBuffer _camModl = GLAllocation.createDirectFloatBuffer(16);
+
+	private int smRes;
+	private RenderTarget shadowMap;
+
+    public void extractSun(int smRes, RenderTarget framebuffer) {
+		this._modl.clear();
+		GL11.glGetFloat(2982, this._modl);
+		this._modl.position(0).limit(16);
+
+		this._proj.clear();
+		GL11.glGetFloat(2983, this._proj);
+		this._proj.position(0).limit(16);
+
+		this.smRes = smRes;
+		this.shadowMap = framebuffer;
+    }
+
+	public void upload(Shader sdr) {
+		sdr.uniformInt("shadowResolution", smRes);
+		GL13.glClientActiveTexture(GL13.GL_TEXTURE1);
+		GL13.glActiveTexture(GL13.GL_TEXTURE1);
+		shadowMap.getDepth().bind();
+		sdr.uniformInt("shadowMap", 1);
+		GL13.glClientActiveTexture(GL13.GL_TEXTURE0);
+		GL13.glActiveTexture(GL13.GL_TEXTURE0);
+
+		GL20.glUniformMatrix4(
+				sdr.getUniform("camMatrix"), false,
+				_camModl
+		);
+		GL20.glUniformMatrix4(
+				sdr.getUniform("sunCameraMatrix"), false,
+				_modl
+		);
+		GL20.glUniformMatrix4(
+				sdr.getUniform("sunProjectionMatrix"), false,
+				_proj
+		);
+	}
+
+	public void finish() {
+		GL13.glClientActiveTexture(GL13.GL_TEXTURE1);
+		GL13.glActiveTexture(GL13.GL_TEXTURE1);
+		GL11.glBindTexture(3553, 0);
+		GL13.glClientActiveTexture(GL13.GL_TEXTURE0);
+		GL13.glActiveTexture(GL13.GL_TEXTURE0);
+	}
+
+	public void extractCamera() {
+		this._camModl.clear();
+		GL11.glGetFloat(2982, this._camModl);
+		this._camModl.position(0).limit(16);
 	}
 }

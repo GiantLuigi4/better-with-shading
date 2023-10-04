@@ -1,4 +1,5 @@
 #version 120
+// required for bitwise operations
 #extension GL_EXT_gpu_shader4 : enable
 
 uniform sampler2D colortex0;
@@ -9,7 +10,7 @@ varying vec4 WorldCoord;
 uniform int flags;
 
 void main() {
-	// flag: discard, used for fab graphics for transparent blocks
+	// flag: discard, used for fancy graphics for transparent blocks
 	// this allows for ignoring per-chunk quad sorting
 	if ((flags & 1) == 0) discard;
 
