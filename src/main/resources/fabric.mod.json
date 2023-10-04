@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "bws",
+  "version": "${version}",
+
+  "name": "Better With Shaders",
+  "description": "This mod aims to help new BTA modders.",
+  "authors": [
+    "Turnip Labs"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": ""
+  },
+
+  "license": "CC0-1.0",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "tfc.better_with_shaders.BetterWithShaders"
+    ]
+  },
+  "mixins": [
+    "better_with_shaders.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.13.3"
+  },
+  "suggests": {
+  }
+}
