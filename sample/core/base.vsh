@@ -11,7 +11,7 @@ uniform mat4 camMatrix;
 uniform mat4 sunCameraMatrix;
 uniform mat4 sunProjectionMatrix;
 
-void main(){
+void main() {
 	// gives more control than ftransform()
 	vec4 estimated = vec4(gl_Vertex.xyz, 1.0) * gl_ModelViewMatrixTranspose;
 	gl_Position = estimated * gl_ProjectionMatrixTranspose;

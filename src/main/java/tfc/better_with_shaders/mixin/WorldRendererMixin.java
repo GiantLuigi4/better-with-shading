@@ -1,7 +1,6 @@
 package tfc.better_with_shaders.mixin;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.Framebuffer;
 import net.minecraft.client.render.RenderGlobal;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.camera.ICamera;
@@ -15,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.better_with_shaders.ShaderManager;
-import tfc.better_with_shaders.shadow.SunCamera;
+import tfc.better_with_shaders.feature.SunCamera;
 import tfc.better_with_shaders.util.GameRendererExtensions;
 import tfc.better_with_shaders.util.RenderTarget;
 import tfc.better_with_shaders.util.RendererExtensions;
@@ -102,6 +101,8 @@ public abstract class WorldRendererMixin {
 
     @Inject(at = @At("HEAD"), method = "renderWorld")
     public void preDrawWorld(float renderPartialTicks, long updateRenderersUntil, CallbackInfo ci) {
+        if (!ShaderManager.INSTANCE.getCapabilities().usesShadows()) return;
+
         if (!sunProjection) {
             int rx = mc.resolution.width;
             int ry = mc.resolution.height;

@@ -1,4 +1,4 @@
-package tfc.better_with_shaders.shadow;
+package tfc.better_with_shaders.feature;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.camera.EntityCamera;

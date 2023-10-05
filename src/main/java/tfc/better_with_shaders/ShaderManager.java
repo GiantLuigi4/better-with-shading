@@ -7,6 +7,7 @@ import net.minecraft.client.render.shader.Shader;
 import net.minecraft.client.render.texturepack.TexturePackBase;
 import net.minecraft.client.render.texturepack.TexturePackList;
 import org.lwjgl.opengl.*;
+import tfc.better_with_shaders.feature.ShaderCapabilities;
 import tfc.better_with_shaders.preprocessor.ConfigProcessor;
 import tfc.better_with_shaders.preprocessor.IncludeProcessor;
 import tfc.better_with_shaders.preprocessor.Processor;
@@ -29,7 +30,7 @@ public class ShaderManager {
     protected Shader DEFAULT;
     protected Shader ENTITY;
 
-    protected Shader POST;
+    protected Shader FINAL;
 
     public Shader getDefaultShader() {
         return DEFAULT;
@@ -132,11 +133,11 @@ public class ShaderManager {
         if (DEFAULT != null) {
             DEFAULT.delete();
             ENTITY.delete();
-            POST.delete();
+            FINAL.delete();
         } else {
             DEFAULT = new Shader();
             ENTITY = new Shader();
-            POST = new Shader();
+            FINAL = new Shader();
         }
 
         base = list.selectedTexturePack;
@@ -145,7 +146,7 @@ public class ShaderManager {
         if (activePack.equals("none")) {
             DEFAULT = null;
             ENTITY = null;
-            POST = null;
+            FINAL = null;
             ((RendererExtensions) mc.render).disableShader();
             return;
         }
@@ -155,23 +156,27 @@ public class ShaderManager {
         ENTITY.compile(string -> this.readAndProcess(string, "entity"), "entity");
         loadingCore = false;
 
+        capabilities.setup();
+
         ((RendererExtensions) mc.render).disableShader();
-        InputStream is = getStream("base.fsh");
+        InputStream is = getStream("final.fsh");
         if (is != null) {
             try {
                 is.close();
             } catch (Throwable ignored) {
             }
         } else return;
-        is = getStream("base.vsh");
+        is = getStream("final.vsh");
         if (is != null) {
             try {
                 is.close();
             } catch (Throwable ignored) {
             }
         } else return;
-        POST.compile(string -> this.readAndProcess(string, "base"), "post");
-        ((RendererExtensions) mc.render).enableShader(POST);
+        FINAL.compile(string -> this.readAndProcess(string, "final"), "post");
+        ((RendererExtensions) mc.render).enableShader(FINAL);
+
+        capabilities.setup();
     }
 
     public boolean shadersActive() {
@@ -183,6 +188,12 @@ public class ShaderManager {
             activePack = name;
             init(list);
         }
+    }
+
+    protected final ShaderCapabilities capabilities = new ShaderCapabilities();
+
+    public ShaderCapabilities getCapabilities() {
+        return capabilities;
     }
 
     private final FloatBuffer _proj = GLAllocation.createDirectFloatBuffer(16);
@@ -213,41 +224,40 @@ public class ShaderManager {
     public void upload(Shader sdr) {
         sdr.uniformInt("shadowResolution", smRes);
 
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
-        shadowMap.getDepth().bind();
-        sdr.uniformInt("shadowMap0", 1);
-
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE2_ARB);
-        shadowMap1.getDepth().bind();
-        sdr.uniformInt("shadowMap1", 2);
-
+        capabilities.tex(ARBMultitexture.GL_TEXTURE1_ARB);
+        if (capabilities.usesMainShadow()) capabilities.texture(sdr, "shadowMap0", shadowMap);
+        if (capabilities.usesExtendedShadow()) capabilities.texture(sdr, "shadowMap1", shadowMap1);
         ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
 
         GL20.glUniformMatrix4(
                 sdr.getUniform("camMatrix"), false,
                 _camModl
         );
-        GL20.glUniformMatrix4(
-                sdr.getUniform("sunCameraMatrix"), false,
-                _modl
-        );
-        GL20.glUniformMatrix4(
-                sdr.getUniform("sunProjectionMatrix"), false,
-                _proj
-        );
+        if (capabilities.usesShadows()) {
+            GL20.glUniformMatrix4(
+                    sdr.getUniform("sunCameraMatrix"), false,
+                    _modl
+            );
+            GL20.glUniformMatrix4(
+                    sdr.getUniform("sunProjectionMatrix"), false,
+                    _proj
+            );
+        }
     }
 
     public void finish() {
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
-        GL11.glBindTexture(3553, 0);
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE2_ARB);
-        GL11.glBindTexture(3553, 0);
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
+        capabilities.disableTex();
     }
 
     public void extractCamera() {
         this._camModl.clear();
         GL11.glGetFloat(2982, this._camModl);
         this._camModl.position(0).limit(16);
+    }
+
+    public Shader[] allShaders() {
+        return new Shader[] {
+                DEFAULT, ENTITY, FINAL
+        };
     }
 }

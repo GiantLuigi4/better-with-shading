@@ -15,6 +15,8 @@ varying vec2 texcoord;
 	#define CEL_INTENSITY 0.666666667
 #endconfig
 
+#include <lighting.glsl>
+
 float getDepth(vec2 coord){
 	coord = clamp(coord, 0, 1);
 	return pow(

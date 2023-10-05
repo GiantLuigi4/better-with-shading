@@ -158,8 +158,6 @@ public class ShadersRendererMixin implements RendererExtensions {
         GL11.glDepthMask(true);
 
         OpenGLHelper.checkError("bws post shader");
-
-        ShaderManager.INSTANCE.useShader("test");
     }
 
     @Override
