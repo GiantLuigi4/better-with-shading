@@ -10,6 +10,4 @@ void main(){
 
 	Color = gl_Color;
 	TexCoord = gl_MultiTexCoord0.xy;
-
-	gl_FogFragCoord = 0.0;
 }

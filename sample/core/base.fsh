@@ -12,37 +12,23 @@ varying vec4 SunCoord;
 
 uniform int flags;
 
-uniform int shadowResolution;
-uniform sampler2D shadowMap0;
-uniform sampler2D shadowMap1;
+// -- CONFIG -- //
+#config
+    #define SOFT_PENUMUBRA
+    #define SHADOW_BRIGHTNESSS 0.35
+    #define PENUMBRA_STEPS 8
+    #define PENUMBRA_ROUNDNESS 8
+#endconfig
 
-#define SOFT_PENUMUBRA
-#define SHADOW_BRIGHTNESSS 0.5
-#define PENUMBRA_STEPS 8
-#define PENUMBRA_ROUNDNESS 8
-
+// -- CONSTANTS -- //
 #define shadow_bias 0.00005
 
-float sampleShadow(vec2 crd) {
-    if (crd.x < 0 || crd.x > 1 || crd.y < 0 || crd.y > 1) {
-        crd = (crd - 0.5) / 4 + 0.5;
-        if (crd.x < 0 || crd.x > 1 || crd.y < 0 || crd.y > 1) {
-            return 1.0;
-        }
-        return texture2D(shadowMap1, crd).r;
-    }
-    return texture2D(shadowMap0, crd).r;
-}
+#include <shadow.glsl>
 
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 vec4 hardPenumbra(vec4 fragPosLightSpace) {
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-    float closestDepth = sampleShadow(projCoords.xy);
-    float currentDepth = projCoords.z;
-    float shadow = currentDepth - shadow_bias > closestDepth ? 0.0 : 1.0;
-
-    return vec4(shadow, shadow, shadow, 1.0) * 0.5 + 0.5;
+    float shadow = checkShadow(fragPosLightSpace, shadow_bias) * (1.0 - SHADOW_BRIGHTNESSS) + SHADOW_BRIGHTNESSS;
+    return vec4(shadow, shadow, shadow, 1.0);
 }
 
 vec4 softPenumbra(vec4 fragPosLightSpace) {

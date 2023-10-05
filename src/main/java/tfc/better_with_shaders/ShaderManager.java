@@ -7,6 +7,9 @@ import net.minecraft.client.render.shader.Shader;
 import net.minecraft.client.render.texturepack.TexturePackBase;
 import net.minecraft.client.render.texturepack.TexturePackList;
 import org.lwjgl.opengl.*;
+import tfc.better_with_shaders.preprocessor.ConfigProcessor;
+import tfc.better_with_shaders.preprocessor.IncludeProcessor;
+import tfc.better_with_shaders.preprocessor.Processor;
 import tfc.better_with_shaders.util.RenderTarget;
 
 import java.io.File;
@@ -38,11 +41,18 @@ public class ShaderManager {
 
     HashMap<String, String> fallbacks = new HashMap<>();
 
+    Processor[] processors;
+
     public ShaderManager() {
         if (!new File(shaderPackDir).exists())
             new File(shaderPackDir).mkdirs();
 
         fallbacks.put("entity", "base");
+
+        processors = new Processor[]{
+                new IncludeProcessor(this::read),
+                new ConfigProcessor()
+        };
     }
 
     public void useShader(String name) {
@@ -78,10 +88,12 @@ public class ShaderManager {
     TexturePackBase def;
 
     protected String read(String string, String name) {
-        try {
-            String ext = ".fsh";
-            if (string.endsWith(".vsh")) ext = ".vsh";
+        String ext = ".fsh";
+        if (string.endsWith(".vsh")) ext = ".vsh";
+        else if (string.endsWith(".glsl")) ext = ".glsl";
+        else if (string.endsWith(".gsh")) ext = ".gsh";
 
+        try {
             InputStream is = getStream(name + ext);
 
             if (is == null) {
@@ -99,8 +111,16 @@ public class ShaderManager {
 
             return new String(data);
         } catch (Throwable err) {
-            throw new RuntimeException(err);
+            throw new RuntimeException("Could not find resource " + name + ext, err);
         }
+    }
+
+    protected String readAndProcess(String string, String name) {
+        String txt = read(string, name);
+        for (Processor processor : processors) {
+            txt = processor.modify(txt);
+        }
+        return txt;
     }
 
     public void init(TexturePackList list) {
@@ -121,8 +141,8 @@ public class ShaderManager {
             return;
         }
 
-        DEFAULT.compile(string -> this.read(string, "base"), "bsege");
-        ENTITY.compile(string -> this.read(string, "entity"), "bsege");
+        DEFAULT.compile(string -> this.readAndProcess(string, "base"), "bsege");
+        ENTITY.compile(string -> this.readAndProcess(string, "entity"), "bsege");
     }
 
     public boolean shadersActive() {
