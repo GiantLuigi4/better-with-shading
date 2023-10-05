@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.better_with_shaders.ShaderManager;
 import tfc.better_with_shaders.util.FramebufferAccessor;
@@ -104,61 +105,26 @@ public class ShadersRendererMixin implements RendererExtensions {
         }
     }
 
-    @Inject(at = @At("HEAD"), method = "endRenderWorld", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "endRenderWorld")
     public void preRender(float partialTicks, CallbackInfo ci) {
         if (bwsPostShader == null) return;
 
         Minecraft mc = ((Renderer) (Object) this).mc;
-
-        OpenGLHelper.checkError("pre end render game");
-        GL11.glViewport(0, 0, this.fbWidth, this.fbHeight);
-        gameFramebufferSwap.bind();
-        if (this.bwsPostShader.isEnabled()) {
-            this.bwsPostShader.bind();
-
-            ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, ((FramebufferAccessor) gameFramebuffer).getId());
-            ARBFramebufferObject.glBlitFramebuffer(
-                    0, 0, fbWidth, fbHeight,
-                    0, 0, fbWidth, fbHeight,
-                    GL11.GL_DEPTH_BUFFER_BIT, GL11.GL_NEAREST
-            );
-            ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, 0);
-
-            GL11.glDepthMask(false);
-
-            ARBMultitexture.glActiveTextureARB(33984);
-            this.worldFramebufferTex.bind();
-            this.bwsPostShader.uniformInt("colortex0", 0);
-            ARBMultitexture.glActiveTextureARB(33985);
-            this.worldFramebufferDepth.bind();
-            this.bwsPostShader.uniformInt("depthtex0", 1);
-
-            ARBMultitexture.glActiveTextureARB(33984);
-            mc.ppm.enabled = true;
-            Shaders.setUniforms(mc, this.bwsPostShader, partialTicks);
-            mc.ppm.enabled = false;
-            Shaders.drawFullscreenRect();
-            GL20.glUseProgram(0);
-        }
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
-        this.worldFramebufferDepth.unbind();
-        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
-        this.worldFramebufferTex.unbind();
-
-        worldFramebuffer.bind();
-        ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, ((FramebufferAccessor) gameFramebufferSwap).getId());
-        ARBFramebufferObject.glBlitFramebuffer(
-                0, 0, fbWidth, fbHeight,
-                0, 0, fbWidth, fbHeight,
-                GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST
-        );
-        ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, 0);
-        worldFramebuffer.unbind();
-
-        GL11.glDepthMask(true);
-
-        OpenGLHelper.checkError("bws post shader");
+        ShaderManager.drawShader(bwsPostShader, mc, gameFramebuffer, gameFramebufferSwap, gameFramebufferTexSwap, gameFramebufferDepthSwap, worldFramebuffer, worldFramebufferTex, worldFramebufferDepth, partialTicks);
     }
+
+//    @Inject(at = @At("RETURN"), method = "endRenderWorld")
+//    public void fixViewport2(float partialTicks, CallbackInfo ci) {
+//        GL11.glViewport(0, 0, fbWidth, fbHeight);
+//    }
+
+//    @Redirect(at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glViewport(IIII)V"), method = "endRenderWorld")
+//    public void fixViewport(int x, int y, int width, int height) {
+//        Minecraft mc = ((Renderer) (Object) this).mc;
+//        int w = mc.resolution.scaledWidth * mc.resolution.scale;
+//        int h = mc.resolution.scaledHeight * mc.resolution.scale;
+//        GL11.glViewport(0, 0, w * mc.resolution.scale, h * mc.resolution.scale);
+//    }
 
     @Override
     public void disableShader() {

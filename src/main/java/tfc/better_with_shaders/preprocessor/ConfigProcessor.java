@@ -7,13 +7,14 @@ public class ConfigProcessor extends Processor {
 
     public ConfigProcessor() {
         values.put("SOFT_PENUMUBRA", true);
-        values.put("SHADOW_BRIGHTNESSS", 0.35);
+        values.put("SHADOW_BRIGHTNESSS", 0.45);
         values.put("PENUMBRA_STEPS", 8);
         values.put("PENUMBRA_ROUNDNESS", 8);
     }
 
     @Override
     public String modify(String src) {
+        values.put("SHADOW_BRIGHTNESSS", 0.65);
         StringBuilder builder = new StringBuilder();
         boolean inConfig = false;
         for (String s : src.split("\n")) {

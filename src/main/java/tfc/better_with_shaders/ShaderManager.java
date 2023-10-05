@@ -3,7 +3,12 @@ package tfc.better_with_shaders;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.GLAllocation;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.Framebuffer;
+import net.minecraft.client.render.OpenGLHelper;
+import net.minecraft.client.render.Renderer;
+import net.minecraft.client.render.Texture;
 import net.minecraft.client.render.shader.Shader;
+import net.minecraft.client.render.shader.Shaders;
 import net.minecraft.client.render.texturepack.TexturePackBase;
 import net.minecraft.client.render.texturepack.TexturePackList;
 import org.lwjgl.opengl.*;
@@ -11,6 +16,7 @@ import tfc.better_with_shaders.feature.ShaderCapabilities;
 import tfc.better_with_shaders.preprocessor.ConfigProcessor;
 import tfc.better_with_shaders.preprocessor.IncludeProcessor;
 import tfc.better_with_shaders.preprocessor.Processor;
+import tfc.better_with_shaders.util.FramebufferAccessor;
 import tfc.better_with_shaders.util.RenderTarget;
 import tfc.better_with_shaders.util.RendererExtensions;
 
@@ -259,5 +265,61 @@ public class ShaderManager {
         return new Shader[] {
                 DEFAULT, ENTITY, FINAL
         };
+    }
+
+    public static void drawShader(Shader bwsPostShader, Minecraft mc, Framebuffer gameFramebuffer, Framebuffer gameFramebufferSwap, Texture gameFramebufferTexSwap, Texture gameFramebufferDepthSwap, Framebuffer worldFramebuffer, Texture worldFramebufferTex, Texture worldFramebufferDepth, float partialTicks) {
+        double renderScale = ((float) (mc.gameSettings.renderScale.value).scale);
+        int width = (int) (renderScale * (double) mc.resolution.width);
+        int height = (int) (renderScale * (double) mc.resolution.height);
+
+        OpenGLHelper.checkError("pre bws post shader");
+        GL11.glViewport(0, 0, width, height);
+        gameFramebufferSwap.bind();
+        if (bwsPostShader.isEnabled()) {
+            bwsPostShader.bind();
+
+            ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, ((FramebufferAccessor) gameFramebuffer).getId());
+            ARBFramebufferObject.glBlitFramebuffer(
+                    0, 0, width, height,
+                    0, 0, width, height,
+                    GL11.GL_DEPTH_BUFFER_BIT, GL11.GL_NEAREST
+            );
+            ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, 0);
+
+            GL11.glDepthMask(false);
+
+            ARBMultitexture.glActiveTextureARB(33984);
+            worldFramebufferTex.bind();
+            bwsPostShader.uniformInt("colortex0", 0);
+            ARBMultitexture.glActiveTextureARB(33985);
+            worldFramebufferDepth.bind();
+            bwsPostShader.uniformInt("depthtex0", 1);
+
+            ARBMultitexture.glActiveTextureARB(33984);
+            mc.ppm.enabled = true;
+            Shaders.setUniforms(mc, bwsPostShader, partialTicks);
+            bwsPostShader.uniformFloat("intensity", (float) renderScale);
+            mc.ppm.enabled = false;
+            Shaders.drawFullscreenRect();
+            GL20.glUseProgram(0);
+        }
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
+        worldFramebufferDepth.unbind();
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
+        worldFramebufferTex.unbind();
+
+        worldFramebuffer.bind();
+        ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, ((FramebufferAccessor) gameFramebufferSwap).getId());
+        ARBFramebufferObject.glBlitFramebuffer(
+                0, 0, width, height,
+                0, 0, width, height,
+                GL11.GL_COLOR_BUFFER_BIT, GL11.GL_NEAREST
+        );
+        ARBFramebufferObject.glBindFramebuffer(ARBFramebufferObject.GL_READ_FRAMEBUFFER, 0);
+        worldFramebuffer.unbind();
+
+        GL11.glDepthMask(true);
+
+        OpenGLHelper.checkError("bws post shader");
     }
 }

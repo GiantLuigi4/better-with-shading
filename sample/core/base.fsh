@@ -15,7 +15,7 @@ uniform int flags;
 // -- CONFIG -- //
 #config
     #define SOFT_PENUMUBRA
-    #define SHADOW_BRIGHTNESSS 0.35
+    #define SHADOW_BRIGHTNESSS 0.65
     #define PENUMBRA_STEPS 8
     #define PENUMBRA_ROUNDNESS 8
 #endconfig

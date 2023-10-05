@@ -173,7 +173,11 @@ public abstract class WorldRendererMixin {
             mc.resolution.scaledHeight = sy;
             mc.resolution.scaledWidthExact = esx;
             mc.resolution.scaledHeightExact = esy;
-            GL11.glViewport(0, 0, mc.resolution.width, mc.resolution.height);
+
+            double renderScale = ((float) (mc.gameSettings.renderScale.value).scale);
+            int width = (int) (renderScale * (double) mc.resolution.width);
+            int height = (int) (renderScale * (double) mc.resolution.height);
+            GL11.glViewport(0, 0, width, height);
 
             mc.activeCamera = camera;
         }
