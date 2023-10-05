@@ -11,6 +11,7 @@ import tfc.better_with_shaders.preprocessor.ConfigProcessor;
 import tfc.better_with_shaders.preprocessor.IncludeProcessor;
 import tfc.better_with_shaders.preprocessor.Processor;
 import tfc.better_with_shaders.util.RenderTarget;
+import tfc.better_with_shaders.util.RendererExtensions;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,6 +28,8 @@ public class ShaderManager {
     // shaders
     protected Shader DEFAULT;
     protected Shader ENTITY;
+
+    protected Shader POST;
 
     public Shader getDefaultShader() {
         return DEFAULT;
@@ -58,17 +61,19 @@ public class ShaderManager {
     public void useShader(String name) {
         if (activePack != null) {
             activePack = name;
-            Config.setProp("shader", name);
-            Config.writeConfig();
+//            Config.setProp("shader", name);
+//            Config.writeConfig();
         } else activePack = name;
         init(mc.texturePackList);
     }
+
+    boolean loadingCore = true;
 
     protected InputStream getStream(String fl) {
         InputStream is = null;
 
         if (!activePack.equals("internal")) {
-            File flf = new File(shaderPackDir + activePack + "/core/" + fl);
+            File flf = new File(shaderPackDir + activePack + (loadingCore ? "/core/" : "/post/") + fl);
 
             if (flf.exists()) {
                 try {
@@ -96,7 +101,7 @@ public class ShaderManager {
         try {
             InputStream is = getStream(name + ext);
 
-            if (is == null) {
+            if (loadingCore && is == null) {
                 // attempt to load default shader
                 is = getStream(fallbacks.get(name) + ext);
             }
@@ -127,9 +132,11 @@ public class ShaderManager {
         if (DEFAULT != null) {
             DEFAULT.delete();
             ENTITY.delete();
+            POST.delete();
         } else {
             DEFAULT = new Shader();
             ENTITY = new Shader();
+            POST = new Shader();
         }
 
         base = list.selectedTexturePack;
@@ -138,11 +145,33 @@ public class ShaderManager {
         if (activePack.equals("none")) {
             DEFAULT = null;
             ENTITY = null;
+            POST = null;
+            ((RendererExtensions) mc.render).disableShader();
             return;
         }
 
-        DEFAULT.compile(string -> this.readAndProcess(string, "base"), "bsege");
-        ENTITY.compile(string -> this.readAndProcess(string, "entity"), "bsege");
+        loadingCore = true;
+        DEFAULT.compile(string -> this.readAndProcess(string, "base"), "base");
+        ENTITY.compile(string -> this.readAndProcess(string, "entity"), "entity");
+        loadingCore = false;
+
+        ((RendererExtensions) mc.render).disableShader();
+        InputStream is = getStream("base.fsh");
+        if (is != null) {
+            try {
+                is.close();
+            } catch (Throwable ignored) {
+            }
+        } else return;
+        is = getStream("base.vsh");
+        if (is != null) {
+            try {
+                is.close();
+            } catch (Throwable ignored) {
+            }
+        } else return;
+        POST.compile(string -> this.readAndProcess(string, "base"), "post");
+        ((RendererExtensions) mc.render).enableShader(POST);
     }
 
     public boolean shadersActive() {
@@ -183,18 +212,16 @@ public class ShaderManager {
 
     public void upload(Shader sdr) {
         sdr.uniformInt("shadowResolution", smRes);
-        GL13.glClientActiveTexture(GL13.GL_TEXTURE1);
-        GL13.glActiveTexture(GL13.GL_TEXTURE1);
+
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
         shadowMap.getDepth().bind();
         sdr.uniformInt("shadowMap0", 1);
 
-        GL13.glClientActiveTexture(GL13.GL_TEXTURE2);
-        GL13.glActiveTexture(GL13.GL_TEXTURE2);
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE2_ARB);
         shadowMap1.getDepth().bind();
         sdr.uniformInt("shadowMap1", 2);
 
-        GL13.glClientActiveTexture(GL13.GL_TEXTURE0);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
 
         GL20.glUniformMatrix4(
                 sdr.getUniform("camMatrix"), false,
@@ -211,14 +238,11 @@ public class ShaderManager {
     }
 
     public void finish() {
-        GL13.glClientActiveTexture(GL13.GL_TEXTURE1);
-        GL13.glActiveTexture(GL13.GL_TEXTURE1);
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
         GL11.glBindTexture(3553, 0);
-        GL13.glClientActiveTexture(GL13.GL_TEXTURE2);
-        GL13.glActiveTexture(GL13.GL_TEXTURE2);
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE2_ARB);
         GL11.glBindTexture(3553, 0);
-        GL13.glClientActiveTexture(GL13.GL_TEXTURE0);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
+        ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
     }
 
     public void extractCamera() {
