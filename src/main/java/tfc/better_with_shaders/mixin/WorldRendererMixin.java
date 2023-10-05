@@ -104,6 +104,8 @@ public abstract class WorldRendererMixin {
         if (!ShaderManager.INSTANCE.getCapabilities().usesShadows()) return;
 
         if (!sunProjection) {
+            ShaderManager.INSTANCE.useShader("test");
+
             int rx = mc.resolution.width;
             int ry = mc.resolution.height;
             int sx = mc.resolution.scaledWidth;
