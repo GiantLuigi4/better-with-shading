@@ -13,14 +13,19 @@ public class SunCamera extends EntityCamera {
     @Override
     public void applyGlTransformations() {
         super.applyGlTransformations();
-//        GL11.glTranslated(0, 0, -16 * mc.gameSettings.renderDistance.value.chunks * 3);
-        GL11.glTranslated(0, 0, -16 * mc.gameSettings.renderDistance.value.chunks * 0.5);
-//        GL11.glTranslated(0, 0, -16 * 3);
+        GL11.glTranslated(0, 0, -4 * mc.gameSettings.renderDistance.value.chunks);
+        GL11.glRotated(45, 1, 0, 0);
+        GL11.glRotatef(80, 0.0F, 1.0F, 0.0F);
+        GL11.glTranslated(0, getY(), 0);
+        GL11.glTranslated(0, -Math.min(mc.thePlayer.world.getHeightValue(
+                (int) mc.thePlayer.x,
+                (int) mc.thePlayer.z
+        ), getY()), 0);
     }
 
     @Override
     public double getX() {
-        return super.getX() + 100;
+        return super.getX();
     }
 
     @Override
@@ -30,7 +35,7 @@ public class SunCamera extends EntityCamera {
 
     @Override
     public double getY() {
-        return super.getY() + 100;
+        return super.getY();
     }
 
     @Override
@@ -40,7 +45,7 @@ public class SunCamera extends EntityCamera {
 
     @Override
     public double getXRot() {
-        return 45;
+        return 0;
     }
 
     @Override

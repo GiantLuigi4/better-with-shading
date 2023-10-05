@@ -1,13 +1,12 @@
 package tfc.better_with_shaders.mixin;
 
-import net.minecraft.client.GLAllocation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.Framebuffer;
 import net.minecraft.client.render.RenderGlobal;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.camera.ICamera;
-import net.minecraft.client.render.shader.ShadersRenderer;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.glu.GLU;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,8 +19,6 @@ import tfc.better_with_shaders.shadow.SunCamera;
 import tfc.better_with_shaders.util.GameRendererExtensions;
 import tfc.better_with_shaders.util.RenderTarget;
 import tfc.better_with_shaders.util.RendererExtensions;
-
-import java.nio.FloatBuffer;
 
 @Mixin(value = WorldRenderer.class, remap = false, priority = 999)
 public abstract class WorldRendererMixin {
@@ -36,6 +33,8 @@ public abstract class WorldRendererMixin {
 
     @Shadow
     protected abstract void setupCameraTransform(float renderPartialTicks);
+
+    @Shadow private float farPlaneDistance;
 
     @Redirect(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/RenderGlobal;callAllDisplayLists(ID)V"), require = 0)
     public void itsAlreadyCalled(RenderGlobal instance, int pass, double pct) {
@@ -56,6 +55,29 @@ public abstract class WorldRendererMixin {
     public void postSetupCam(float renderPartialTicks, CallbackInfo ci) {
         if (sunProjection) {
             this.mc.activeCamera = new SunCamera(mc, mc.thePlayer);
+        }
+    }
+
+    boolean extended = false;
+
+    @Redirect(at = @At(value = "INVOKE", target = "Lorg/lwjgl/util/glu/GLU;gluPerspective(FFFF)V"), method = "setupCameraTransform")
+    public void noPerspective(float fovy, float aspect, float zNear, float zFar) {
+        if (sunProjection) {
+//            GL11.glOrtho(
+//                    -1000, -1000,
+//                    1000, 1000,
+//                    2, mc.gameSettings.renderDistance.value.chunks * 2
+//            );
+            double div = 100;
+            div *= mc.resolution.width / 2400;
+            if (extended) div *= 4;
+            GL11.glOrtho(
+                    -(double)this.mc.resolution.width / div, (double)this.mc.resolution.width / div,
+                    -(double)this.mc.resolution.height / div, (double)this.mc.resolution.height / div,
+                    2, (double)(this.farPlaneDistance * 3.0F)
+            );
+        } else {
+            GLU.gluPerspective(fovy, aspect, zNear, zFar);
         }
     }
 
@@ -80,7 +102,8 @@ public abstract class WorldRendererMixin {
         if (sunProjection) ci.cancel();
     }
 
-    RenderTarget framebuffer = new RenderTarget();
+    RenderTarget mainShadow = new RenderTarget();
+    RenderTarget extendedShadow = new RenderTarget();
 
     @Inject(at = @At("HEAD"), method = "renderWorld")
     public void preDrawWorld(float renderPartialTicks, long updateRenderersUntil, CallbackInfo ci) {
@@ -92,18 +115,12 @@ public abstract class WorldRendererMixin {
             double esx = mc.resolution.scaledWidthExact;
             double esy = mc.resolution.scaledHeightExact;
 
-            int smRes = 1200;
+            int smRes = 2400;
 
-            if (!framebuffer.isGenerated()) {
-                framebuffer.setSize(smRes, smRes, false);
+            if (!mainShadow.isGenerated()) {
+                mainShadow.setSize(smRes, smRes, false, true);
+                extendedShadow.setSize(smRes / 2, smRes / 2, false, false);
             }
-
-            mc.resolution.width = smRes;
-            mc.resolution.height = smRes;
-            mc.resolution.scaledWidth = smRes;
-            mc.resolution.scaledHeight = smRes;
-            mc.resolution.scaledWidthExact = smRes;
-            mc.resolution.scaledHeightExact = smRes;
 
             ICamera camera = mc.activeCamera;
             if (camera instanceof SunCamera) {
@@ -111,20 +128,33 @@ public abstract class WorldRendererMixin {
             }
             this.mc.activeCamera = new SunCamera(mc, mc.thePlayer);
 
+            RenderTarget[] framebuffers = new RenderTarget[]{
+                    mainShadow, extendedShadow
+            };
             sunProjection = true;
-            framebuffer.bind();
-            GL11.glViewport(0, 0, smRes, smRes);
-            GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
             ((GameRendererExtensions) mc.renderGlobal).swapRender();
+            for (RenderTarget framebuffer : framebuffers) {
+                int q = extended ? 2 : 1;
+                mc.resolution.width = smRes / q;
+                mc.resolution.height = smRes / q;
+                mc.resolution.scaledWidth = smRes / q;
+                mc.resolution.scaledHeight = smRes / q;
+                mc.resolution.scaledWidthExact = smRes / q;
+                mc.resolution.scaledHeightExact = smRes / q;
 
-            GL11.glPushMatrix();
-            setupCameraTransform(renderPartialTicks);
-            ShaderManager.INSTANCE.extractSun(smRes, framebuffer);
-            GL11.glPopMatrix();
+                framebuffer.bind();
+                GL11.glViewport(0, 0, smRes / q, smRes / q);
+                GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
 
-            renderWorld(renderPartialTicks, updateRenderersUntil);
+                GL11.glPushMatrix();
+                setupCameraTransform(renderPartialTicks);
+                ShaderManager.INSTANCE.extractSun(smRes, mainShadow);
+                GL11.glPopMatrix();
+
+                renderWorld(renderPartialTicks, updateRenderersUntil);
+                framebuffer.unbind();
+            }
             ((GameRendererExtensions) mc.renderGlobal).swapRender();
-            framebuffer.unbind();
             ((RendererExtensions) mc.render).rebind();
             sunProjection = false;
 

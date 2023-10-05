@@ -75,6 +75,13 @@ public class GamelRendererMixin implements GameRendererExtensions {
     double swapSortZ = 0;
     ChunkRenderer[] chunkRendersSwap;
 
+    boolean inSunDraw = false;
+
+    @Inject(at = @At("HEAD"), method = "markRenderersForNewPosition", cancellable = true)
+    public void noDontMark(int i, int j, int k, CallbackInfo ci) {
+        if (inSunDraw) ci.cancel();
+    }
+
     @Override
     public void swapRender() {
         double tmpX = swapSortX;
@@ -89,6 +96,7 @@ public class GamelRendererMixin implements GameRendererExtensions {
         ChunkRenderer[] tmpChnks = sortedChunkRenderers;
         sortedChunkRenderers = chunkRendersSwap;
         chunkRendersSwap = tmpChnks;
+        inSunDraw = !inSunDraw;
     }
 
     @Inject(at = @At("RETURN"), method = "loadRenderers")
