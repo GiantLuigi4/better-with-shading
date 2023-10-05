@@ -63,14 +63,9 @@ public abstract class WorldRendererMixin {
     @Redirect(at = @At(value = "INVOKE", target = "Lorg/lwjgl/util/glu/GLU;gluPerspective(FFFF)V"), method = "setupCameraTransform")
     public void noPerspective(float fovy, float aspect, float zNear, float zFar) {
         if (sunProjection) {
-//            GL11.glOrtho(
-//                    -1000, -1000,
-//                    1000, 1000,
-//                    2, mc.gameSettings.renderDistance.value.chunks * 2
-//            );
             double div = 100;
             div *= mc.resolution.width / 2400;
-            if (extended) div *= 4;
+            if (extended) div /= 4;
             GL11.glOrtho(
                     -(double)this.mc.resolution.width / div, (double)this.mc.resolution.width / div,
                     -(double)this.mc.resolution.height / div, (double)this.mc.resolution.height / div,
@@ -119,7 +114,7 @@ public abstract class WorldRendererMixin {
 
             if (!mainShadow.isGenerated()) {
                 mainShadow.setSize(smRes, smRes, false, true);
-                extendedShadow.setSize(smRes / 2, smRes / 2, false, false);
+                extendedShadow.setSize(smRes, smRes, false, false);
             }
 
             ICamera camera = mc.activeCamera;
@@ -133,26 +128,37 @@ public abstract class WorldRendererMixin {
             };
             sunProjection = true;
             ((GameRendererExtensions) mc.renderGlobal).swapRender();
+
+            mc.resolution.width = smRes;
+            mc.resolution.height = smRes;
+            mc.resolution.scaledWidth = smRes;
+            mc.resolution.scaledHeight = smRes;
+            mc.resolution.scaledWidthExact = smRes;
+            mc.resolution.scaledHeightExact = smRes;
+
+            GL11.glPushMatrix();
+            setupCameraTransform(renderPartialTicks);
+            ShaderManager.INSTANCE.extractSun(false, smRes, mainShadow);
+            ShaderManager.INSTANCE.extractSun(true, smRes, extendedShadow);
+            GL11.glPopMatrix();
+
+            extended = false;
             for (RenderTarget framebuffer : framebuffers) {
-                int q = extended ? 2 : 1;
+                int q = extended ? 1 : 1;
                 mc.resolution.width = smRes / q;
                 mc.resolution.height = smRes / q;
                 mc.resolution.scaledWidth = smRes / q;
                 mc.resolution.scaledHeight = smRes / q;
-                mc.resolution.scaledWidthExact = smRes / q;
-                mc.resolution.scaledHeightExact = smRes / q;
+                mc.resolution.scaledWidthExact = smRes / (double) q;
+                mc.resolution.scaledHeightExact = smRes / (double) q;
 
                 framebuffer.bind();
                 GL11.glViewport(0, 0, smRes / q, smRes / q);
                 GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
-
-                GL11.glPushMatrix();
-                setupCameraTransform(renderPartialTicks);
-                ShaderManager.INSTANCE.extractSun(smRes, mainShadow);
-                GL11.glPopMatrix();
-
                 renderWorld(renderPartialTicks, updateRenderersUntil);
                 framebuffer.unbind();
+
+                extended = !extended;
             }
             ((GameRendererExtensions) mc.renderGlobal).swapRender();
             ((RendererExtensions) mc.render).rebind();

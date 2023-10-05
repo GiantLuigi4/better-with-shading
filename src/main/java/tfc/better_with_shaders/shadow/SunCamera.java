@@ -13,7 +13,7 @@ public class SunCamera extends EntityCamera {
     @Override
     public void applyGlTransformations() {
         super.applyGlTransformations();
-        GL11.glTranslated(0, 0, -4 * mc.gameSettings.renderDistance.value.chunks);
+        GL11.glTranslated(0, 0, -32 * mc.gameSettings.renderDistance.value.chunks);
         GL11.glRotated(45, 1, 0, 0);
         GL11.glRotatef(80, 0.0F, 1.0F, 0.0F);
         GL11.glTranslated(0, getY(), 0);

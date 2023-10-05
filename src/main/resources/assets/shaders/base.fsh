@@ -12,7 +12,12 @@ uniform int flags;
 void main() {
 	// flag: discard, used for fancy graphics for transparent blocks
 	// this allows for ignoring per-chunk quad sorting
-	if ((flags & 1) == 0) discard;
+	if ((flags & 1) == 1) discard;
+	// flag: shadow, no point in processing shadows if you're in the process of drawing them
+	if ((flags & 2) == 2) {
+		gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color;
+		return;
+	}
 
 	// TODO: per pixel fog
 //	float fc = gl_FragCoord.w / gl_DepthRange.diff - gl_DepthRange.near;

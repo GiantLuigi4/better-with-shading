@@ -40,11 +40,19 @@ public class GamelRendererMixin implements GameRendererExtensions {
                         Minecraft.getMinecraft(Minecraft.class).gameSettings.fancyGraphics.value != 1
         ) {
             ShaderManager.INSTANCE.getDefaultShader().uniformInt(
-                    "flags", 1
+                    "flags", 0
             );
         } else {
             ShaderManager.INSTANCE.getDefaultShader().uniformInt(
-                    "flags", 0
+                    "flags", 1
+            );
+        }
+
+        if (
+                inSunDraw
+        ) {
+            ShaderManager.INSTANCE.getDefaultShader().uniformInt(
+                    "flags", 2
             );
         }
     }
@@ -59,11 +67,11 @@ public class GamelRendererMixin implements GameRendererExtensions {
                         Minecraft.getMinecraft(Minecraft.class).gameSettings.fancyGraphics.value != 1
         ) {
             ShaderManager.INSTANCE.getDefaultShader().uniformInt(
-                    "flags", 1
+                    "flags", 0
             );
         } else {
             ShaderManager.INSTANCE.getDefaultShader().uniformInt(
-                    "flags", 1
+                    "flags", 0
             );
         }
         ShaderManager.INSTANCE.finish();
