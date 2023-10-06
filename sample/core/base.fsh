@@ -48,6 +48,7 @@ void main() {
     float fc = gl_FogFragCoord;
     fc /= 3.0;
     fc *= gl_Fog.density;
+    fc = min(fc, 1);
 //    gl_FragColor = vec4(fc * gl_Fog.color.xyz, 1.0);
 
     gl_FragColor = vec4(
