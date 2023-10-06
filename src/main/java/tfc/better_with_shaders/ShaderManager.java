@@ -68,8 +68,8 @@ public class ShaderManager {
     public void useShader(String name) {
         if (activePack != null) {
             activePack = name;
-//            Config.setProp("shader", name);
-//            Config.writeConfig();
+            Config.setProp("shader", name);
+            Config.writeConfig();
         } else activePack = name;
         init(mc.texturePackList);
     }
@@ -190,10 +190,8 @@ public class ShaderManager {
     }
 
     public void useFirstShader(TexturePackList list, String name) {
-        if (activePack == null) {
-            activePack = name;
-            init(list);
-        }
+        activePack = name;
+        init(list);
     }
 
     protected final ShaderCapabilities capabilities = new ShaderCapabilities();
@@ -322,4 +320,8 @@ public class ShaderManager {
 
         OpenGLHelper.checkError("bws post shader");
     }
+	
+	public void reloadShader() {
+		init(mc.texturePackList);
+	}
 }

@@ -53,7 +53,7 @@ public abstract class WorldRendererMixin {
     @Inject(at = @At("TAIL"), method = "setupCamera")
     public void postSetupCam(float renderPartialTicks, CallbackInfo ci) {
         if (sunProjection) {
-            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer);
+            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer, mc.activeCamera);
         }
     }
 
@@ -64,11 +64,11 @@ public abstract class WorldRendererMixin {
         if (sunProjection) {
             double div = 100;
             div *= mc.resolution.width / 2400;
-            if (extended) div /= 4;
+            if (extended) div /= 8;
             GL11.glOrtho(
                     -(double)this.mc.resolution.width / div, (double)this.mc.resolution.width / div,
                     -(double)this.mc.resolution.height / div, (double)this.mc.resolution.height / div,
-                    2, (double)(this.farPlaneDistance * 3.0F)
+                    2, this.farPlaneDistance * 3.0F
             );
         } else {
             GLU.gluPerspective(fovy, aspect, zNear, zFar);
@@ -104,8 +104,6 @@ public abstract class WorldRendererMixin {
         if (!ShaderManager.INSTANCE.getCapabilities().usesShadows()) return;
 
         if (!sunProjection) {
-            ShaderManager.INSTANCE.useShader("test");
-
             int rx = mc.resolution.width;
             int ry = mc.resolution.height;
             int sx = mc.resolution.scaledWidth;
@@ -113,7 +111,7 @@ public abstract class WorldRendererMixin {
             double esx = mc.resolution.scaledWidthExact;
             double esy = mc.resolution.scaledHeightExact;
 
-            int smRes = 2400;
+            int smRes = 2400 * 2;
 
             if (!mainShadow.isGenerated()) {
                 mainShadow.setSize(smRes, smRes, false, true);
@@ -124,7 +122,8 @@ public abstract class WorldRendererMixin {
             if (camera instanceof SunCamera) {
                 camera = null;
             }
-            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer);
+            setupCamera(renderPartialTicks);
+            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer, mc.activeCamera);
 
             RenderTarget[] framebuffers = new RenderTarget[]{
                     mainShadow, extendedShadow

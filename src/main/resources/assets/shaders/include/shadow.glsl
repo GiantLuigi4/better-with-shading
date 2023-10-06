@@ -4,10 +4,11 @@ uniform sampler2D shadowMap1;
 
 float sampleShadow(vec2 crd) {
     if (crd.x < 0 || crd.x > 1 || crd.y < 0 || crd.y > 1) {
-        crd = (crd - 0.5) / 4 + 0.5;
-        if (crd.x < 0 || crd.x > 1 || crd.y < 0 || crd.y > 1) {
+        crd = (crd - 0.5) / 8 + 0.5;
+
+        if (crd.x < 0 || crd.x > 1 || crd.y < 0 || crd.y > 1)
             return 1.0;
-        }
+
         return texture2D(shadowMap1, crd).r;
     }
     return texture2D(shadowMap0, crd).r;
