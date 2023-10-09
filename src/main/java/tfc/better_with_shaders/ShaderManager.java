@@ -16,6 +16,7 @@ import tfc.better_with_shaders.feature.ShaderCapabilities;
 import tfc.better_with_shaders.preprocessor.ConfigProcessor;
 import tfc.better_with_shaders.preprocessor.IncludeProcessor;
 import tfc.better_with_shaders.preprocessor.Processor;
+import tfc.better_with_shaders.preprocessor.config.ConfigLoader;
 import tfc.better_with_shaders.util.FramebufferAccessor;
 import tfc.better_with_shaders.util.RenderTarget;
 import tfc.better_with_shaders.util.RendererExtensions;
@@ -53,6 +54,8 @@ public class ShaderManager {
 
     Processor[] processors;
 
+    ConfigLoader cfg = new ConfigLoader();
+
     public ShaderManager() {
         if (!new File(shaderPackDir).exists())
             new File(shaderPackDir).mkdirs();
@@ -61,7 +64,7 @@ public class ShaderManager {
 
         processors = new Processor[]{
                 new IncludeProcessor(this::read),
-                new ConfigProcessor()
+                new ConfigProcessor(cfg)
         };
     }
 
@@ -136,6 +139,8 @@ public class ShaderManager {
     }
 
     public void init(TexturePackList list) {
+        cfg.dump();
+
         if (DEFAULT != null) {
             DEFAULT.delete();
             ENTITY.delete();
@@ -156,6 +161,27 @@ public class ShaderManager {
             ((RendererExtensions) mc.render).disableShader();
             return;
         }
+
+        cfg.load((file) -> {
+            if (activePack.equals("internal")) return null;
+
+            File flf = new File(shaderPackDir + activePack + "/" + file);
+            if (flf.exists()) {
+                try {
+                    FileInputStream fis = new FileInputStream(flf);
+                    byte[] data = new byte[fis.available()];
+                    fis.read(data);
+                    try {
+                        fis.close();
+                    } catch (Throwable ignored) {
+                    }
+                    return new String(data);
+                } catch (Throwable err) {
+                    err.printStackTrace();
+                }
+            }
+            return null;
+        });
 
         loadingCore = true;
         DEFAULT.compile(string -> this.readAndProcess(string, "base"), "base");

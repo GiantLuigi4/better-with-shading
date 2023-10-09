@@ -1,20 +1,18 @@
 package tfc.better_with_shaders.preprocessor;
 
+import tfc.better_with_shaders.preprocessor.config.ConfigLoader;
+
 import java.util.HashMap;
 
 public class ConfigProcessor extends Processor {
-    HashMap<String, Object> values = new HashMap<>();
+    ConfigLoader cfg;
 
-    public ConfigProcessor() {
-        values.put("SOFT_PENUMUBRA", true);
-        values.put("SHADOW_BRIGHTNESSS", 0.45);
-        values.put("PENUMBRA_STEPS", 8);
-        values.put("PENUMBRA_ROUNDNESS", 8);
+    public ConfigProcessor(ConfigLoader cfg) {
+        this.cfg = cfg;
     }
 
     @Override
     public String modify(String src) {
-        values.put("SHADOW_BRIGHTNESSS", 0.65);
         StringBuilder builder = new StringBuilder();
         boolean inConfig = false;
         for (String s : src.split("\n")) {
@@ -29,14 +27,14 @@ public class ConfigProcessor extends Processor {
 
                 if (s.startsWith("#define")) {
                     String name = s.split(" ")[1].trim();
-                    if (values.containsKey(name)) {
-                        if (values.get(name) instanceof Boolean) {
-                            if ((Boolean) values.get(name))
+                    if (cfg.values.containsKey(name)) {
+                        if (cfg.values.get(name) instanceof Boolean) {
+                            if ((Boolean) cfg.values.get(name))
                                 builder.append("#define ").append(name).append("\n");
                             else
                                 builder.append("\n");
                         } else
-                            builder.append("#define ").append(name).append(" ").append(values.get(name).toString()).append("\n");
+                            builder.append("#define ").append(name).append(" ").append(cfg.values.get(name).toString()).append("\n");
                         continue;
                     }
                 }

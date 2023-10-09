@@ -1,0 +1,13 @@
+[left]
+  [left.shadows]
+    category = "shadows.toml"
+    name = "Shadows"
+  [left.misc]
+    category = "misc.toml"
+    name = "Miscellaneous"
+
+[right]
+  [right.godrays]
+    boolean = "GOD_RAYS"
+    default = false
+    name = "God Rays"
