@@ -11,6 +11,7 @@ import net.minecraft.client.render.shader.Shader;
 import net.minecraft.client.render.shader.Shaders;
 import net.minecraft.client.render.texturepack.TexturePackBase;
 import net.minecraft.client.render.texturepack.TexturePackList;
+import net.minecraft.core.util.phys.Vec3d;
 import org.lwjgl.opengl.*;
 import tfc.better_with_shaders.feature.ShaderCapabilities;
 import tfc.better_with_shaders.preprocessor.ConfigProcessor;
@@ -70,9 +71,11 @@ public class ShaderManager {
 
     public void useShader(String name) {
         if (activePack != null) {
-            activePack = name;
-            Config.setProp("shader", name);
-            Config.writeConfig();
+            if (!activePack.equals(name)) {
+                activePack = name;
+                Config.setProp("shader", name);
+                Config.writeConfig();
+            }
         } else activePack = name;
         init(mc.texturePackList);
     }
@@ -139,7 +142,7 @@ public class ShaderManager {
     }
 
     public void init(TexturePackList list) {
-        cfg.dump();
+//        cfg.dump();
 
         if (DEFAULT != null) {
             DEFAULT.delete();
@@ -162,26 +165,28 @@ public class ShaderManager {
             return;
         }
 
-        cfg.load((file) -> {
-            if (activePack.equals("internal")) return null;
+        if (false) {
+            cfg.load((file) -> {
+                if (activePack.equals("internal")) return null;
 
-            File flf = new File(shaderPackDir + activePack + "/" + file);
-            if (flf.exists()) {
-                try {
-                    FileInputStream fis = new FileInputStream(flf);
-                    byte[] data = new byte[fis.available()];
-                    fis.read(data);
+                File flf = new File(shaderPackDir + activePack + "/" + file);
+                if (flf.exists()) {
                     try {
-                        fis.close();
-                    } catch (Throwable ignored) {
+                        FileInputStream fis = new FileInputStream(flf);
+                        byte[] data = new byte[fis.available()];
+                        fis.read(data);
+                        try {
+                            fis.close();
+                        } catch (Throwable ignored) {
+                        }
+                        return new String(data);
+                    } catch (Throwable err) {
+                        err.printStackTrace();
                     }
-                    return new String(data);
-                } catch (Throwable err) {
-                    err.printStackTrace();
                 }
-            }
-            return null;
-        });
+                return null;
+            });
+        }
 
         loadingCore = true;
         DEFAULT.compile(string -> this.readAndProcess(string, "base"), "base");
@@ -229,6 +234,7 @@ public class ShaderManager {
     private final FloatBuffer _proj = GLAllocation.createDirectFloatBuffer(16);
     private final FloatBuffer _modl = GLAllocation.createDirectFloatBuffer(16);
     private final FloatBuffer _camModl = GLAllocation.createDirectFloatBuffer(16);
+    private final FloatBuffer _camProj = GLAllocation.createDirectFloatBuffer(16);
 
     private int smRes;
     private RenderTarget shadowMap;
@@ -255,13 +261,17 @@ public class ShaderManager {
         sdr.uniformInt("shadowResolution", smRes);
 
         capabilities.tex(ARBMultitexture.GL_TEXTURE1_ARB);
-        if (capabilities.usesMainShadow()) capabilities.texture(sdr, "shadowMap0", shadowMap);
-        if (capabilities.usesExtendedShadow()) capabilities.texture(sdr, "shadowMap1", shadowMap1);
+        if (capabilities.usesMainShadow()) capabilities.texture(sdr, "shadowMap0", shadowMap.getDepth());
+        if (capabilities.usesExtendedShadow()) capabilities.texture(sdr, "shadowMap1", shadowMap1.getDepth());
         ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE0_ARB);
 
         GL20.glUniformMatrix4(
                 sdr.getUniform("camMatrix"), false,
                 _camModl
+        );
+        GL20.glUniformMatrix4(
+                sdr.getUniform("projectionMatrix"), false,
+                _camProj
         );
         if (capabilities.usesShadows()) {
             GL20.glUniformMatrix4(
@@ -273,6 +283,52 @@ public class ShaderManager {
                     _proj
             );
         }
+        int uform = sdr.getUniform("skyColor");
+        if (uform != -1) {
+            Vec3d skyCol = mc.theWorld.getSkyColor(mc.activeCamera, 1);
+
+            Minecraft mc = Minecraft.getMinecraft(Minecraft.class);
+            float celestialAngle = mc.theWorld.getCelestialAngle(0);
+            float[] col = mc.theWorld.getWorldType().getSunriseColor(
+                    celestialAngle,
+                    1
+            );
+            if (col == null) {
+                GL20.glUniform3f(
+                        uform,
+                        (float) skyCol.xCoord, (float) skyCol.yCoord, (float) skyCol.zCoord
+                );
+            } else {
+                for (int i = 0; i < 3; i++) {
+                    col[i] *= col[3] * 2;
+                }
+                col[0] += (float) skyCol.xCoord * (1 - col[3]);
+                col[1] += (float) skyCol.yCoord * (1 - col[3]);
+                col[2] += (float) skyCol.zCoord * (1 - col[3]);
+
+                GL20.glUniform3f(
+                        uform,
+                        (float) col[0], (float) col[1], (float) col[2]
+                );
+            }
+        }
+        if (capabilities.usesSunDir()) {
+            uform = sdr.getUniform("sunDir");
+
+            if (uform != -1) {
+                float celestialAngle = mc.theWorld.getCelestialAngle(0);
+                if (celestialAngle * 360 > 90) {
+                    celestialAngle += 90 / 180f;
+                }
+                celestialAngle = (float) Math.toRadians(celestialAngle * 360);
+
+                GL20.glUniform3f(uform,
+                        (float) Math.sin(celestialAngle),
+                        (float) -Math.cos(celestialAngle),
+                        0
+                );
+            }
+        }
     }
 
     public void finish() {
@@ -283,10 +339,13 @@ public class ShaderManager {
         this._camModl.clear();
         GL11.glGetFloat(2982, this._camModl);
         this._camModl.position(0).limit(16);
+        this._camProj.clear();
+        GL11.glGetFloat(2983, this._camProj);
+        this._camProj.position(0).limit(16);
     }
 
     public Shader[] allShaders() {
-        return new Shader[] {
+        return new Shader[]{
                 DEFAULT, ENTITY, FINAL
         };
     }
@@ -313,18 +372,26 @@ public class ShaderManager {
             GL11.glDepthMask(false);
 
             ARBMultitexture.glActiveTextureARB(33984);
-            worldFramebufferTex.bind();
-            bwsPostShader.uniformInt("colortex0", 0);
-            ARBMultitexture.glActiveTextureARB(33985);
-            worldFramebufferDepth.bind();
-            bwsPostShader.uniformInt("depthtex0", 1);
+//            worldFramebufferTex.bind();
+//            bwsPostShader.uniformInt("colortex0", 0);
+//            ARBMultitexture.glActiveTextureARB(33985);
+//            worldFramebufferDepth.bind();
+//            bwsPostShader.uniformInt("depthtex0", 1);
 
             ARBMultitexture.glActiveTextureARB(33984);
             mc.ppm.enabled = true;
             Shaders.setUniforms(mc, bwsPostShader, partialTicks);
+            INSTANCE.upload(bwsPostShader);
+            INSTANCE.capabilities.texture(
+                    bwsPostShader, "colortex0", worldFramebufferTex
+            );
+            INSTANCE.capabilities.texture(
+                    bwsPostShader, "depthtex0", worldFramebufferDepth
+            );
             bwsPostShader.uniformFloat("intensity", (float) renderScale);
             mc.ppm.enabled = false;
             Shaders.drawFullscreenRect();
+            INSTANCE.finish();
             GL20.glUseProgram(0);
         }
         ARBMultitexture.glActiveTextureARB(ARBMultitexture.GL_TEXTURE1_ARB);
@@ -346,8 +413,8 @@ public class ShaderManager {
 
         OpenGLHelper.checkError("bws post shader");
     }
-	
-	public void reloadShader() {
-		init(mc.texturePackList);
-	}
+
+    public void reloadShader() {
+        init(mc.texturePackList);
+    }
 }

@@ -28,8 +28,8 @@ public class SunCamera implements ICamera {
     @Override
     public void applyGlTransformations() {
         float celestialAngle = thePlayer.world.getCelestialAngle(0);
-        
-        GL11.glTranslated(0, 0, -8 * mc.gameSettings.renderDistance.value.chunks);
+
+        GL11.glTranslated(0, 0, -16 * mc.gameSettings.renderDistance.value.chunks);
         if (celestialAngle * 360 > 90) {
             celestialAngle += 90 / 180f;
         }

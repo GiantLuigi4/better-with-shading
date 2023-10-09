@@ -1,5 +1,6 @@
 package tfc.better_with_shaders.feature;
 
+import net.minecraft.client.render.Texture;
 import net.minecraft.client.render.shader.Shader;
 import org.lwjgl.opengl.ARBMultitexture;
 import org.lwjgl.opengl.GL11;
@@ -63,9 +64,9 @@ public class ShaderCapabilities {
         minTex = currentTex = i;
     }
 
-    public void texture(Shader sdr, String name, RenderTarget shadowMap) {
+    public void texture(Shader sdr, String name, Texture shadowMap) {
         ARBMultitexture.glActiveTextureARB(currentTex);
-        shadowMap.getDepth().bind();
+        shadowMap.bind();
         int uform = sdr.getUniform(name);
         GL20.glUniform1i(uform, currentTex - ARBMultitexture.GL_TEXTURE0_ARB);
         currentTex += 1;
