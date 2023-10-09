@@ -417,4 +417,8 @@ public class ShaderManager {
     public void reloadShader() {
         init(mc.texturePackList);
     }
+
+    public String activeShader() {
+        return activePack;
+    }
 }
