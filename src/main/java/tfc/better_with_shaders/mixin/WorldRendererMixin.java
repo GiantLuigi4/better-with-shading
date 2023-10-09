@@ -126,9 +126,9 @@ public abstract class WorldRendererMixin {
 
     @Inject(at = @At("HEAD"), method = "renderWorld")
     public void preDrawWorld(float renderPartialTicks, long updateRenderersUntil, CallbackInfo ci) {
-        if (!sunProjection) {
-            ShaderManager.INSTANCE.useShader("test");
-        }
+//        if (!sunProjection) {
+//            ShaderManager.INSTANCE.useShader("test");
+//        }
 
         if (!ShaderManager.INSTANCE.getCapabilities().usesShadows()) return;
 
