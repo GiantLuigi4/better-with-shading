@@ -16,7 +16,7 @@ uniform int flags;
 #config
     #define SOFT_PENUMUBRA
     #define SHADOW_BRIGHTNESSS 0.65
-    #define PENUMBRA_STEPS 8
+    #define PENUMBRA_STEPS 16
     #define PENUMBRA_ROUNDNESS 8
 #endconfig
 
@@ -44,4 +44,15 @@ void main() {
     #endif
 
     gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color * shadow;
+
+    float fc = gl_FogFragCoord;
+    fc /= 3.0;
+    fc *= gl_Fog.density;
+    fc = min(fc, 1);
+//    gl_FragColor = vec4(fc * gl_Fog.color.xyz, 1.0);
+
+    gl_FragColor = vec4(
+            gl_FragColor.xyz * (1 - fc) + gl_Fog.color.xyz * fc,
+            gl_FragColor.a
+    );
 }

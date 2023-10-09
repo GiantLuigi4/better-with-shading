@@ -38,7 +38,7 @@ public class ShadersRendererMixin implements RendererExtensions {
     protected Texture gameFramebufferTex;
 
     @Unique
-    protected Shader bwsPostShader;
+    private static Shader bwsPostShader;
 
     @Shadow
     public int fbWidth;

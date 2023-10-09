@@ -114,4 +114,9 @@ public class GamelRendererMixin implements GameRendererExtensions {
             System.arraycopy(chunkRenderers, 0, chunkRendersSwap, 0, chunkRendersSwap.length);
         }
     }
+    
+    @Inject(at = @At("TAIL"), method = "loadRenderers")
+    public void postLoadRenders(CallbackInfo ci) {
+        ShaderManager.INSTANCE.reloadShader();
+    }
 }

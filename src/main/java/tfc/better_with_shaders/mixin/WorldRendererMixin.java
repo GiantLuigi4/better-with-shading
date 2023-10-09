@@ -1,6 +1,7 @@
 package tfc.better_with_shaders.mixin;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiPhotoMode;
 import net.minecraft.client.render.RenderGlobal;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.camera.ICamera;
@@ -13,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.better_with_shaders.Config;
 import tfc.better_with_shaders.ShaderManager;
 import tfc.better_with_shaders.feature.SunCamera;
 import tfc.better_with_shaders.util.GameRendererExtensions;
@@ -53,7 +55,7 @@ public abstract class WorldRendererMixin {
     @Inject(at = @At("TAIL"), method = "setupCamera")
     public void postSetupCam(float renderPartialTicks, CallbackInfo ci) {
         if (sunProjection) {
-            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer);
+            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer, mc.activeCamera);
         }
     }
 
@@ -64,14 +66,37 @@ public abstract class WorldRendererMixin {
         if (sunProjection) {
             double div = 100;
             div *= mc.resolution.width / 2400;
-            if (extended) div /= 4;
+            if (extended) div /= 8;
             GL11.glOrtho(
                     -(double)this.mc.resolution.width / div, (double)this.mc.resolution.width / div,
                     -(double)this.mc.resolution.height / div, (double)this.mc.resolution.height / div,
-                    2, (double)(this.farPlaneDistance * 3.0F)
+                    2, this.farPlaneDistance * 3.0F
             );
         } else {
             GLU.gluPerspective(fovy, aspect, zNear, zFar);
+        }
+    }
+    
+    int realResX = 0;
+    int realResY = 0;
+    
+    // TODO: this isn't working properly
+    @Redirect(at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glOrtho(DDDDDD)V"), method = "setupCameraTransform")
+    public void noPerspective(double left, double right, double bottom, double top, double zNear, double zFar) {
+        double div = 10;
+        if (extended) div /= 8;
+        if (sunProjection) {
+            GL11.glOrtho(
+                    0, (double)realResX / div,
+                    0, (double)realResY / div,
+                    2, this.farPlaneDistance * 3.0F
+            );
+        } else {
+            GL11.glOrtho(
+                    left, right,
+                    bottom, top,
+                    zNear, zFar
+            );
         }
     }
 
@@ -104,8 +129,6 @@ public abstract class WorldRendererMixin {
         if (!ShaderManager.INSTANCE.getCapabilities().usesShadows()) return;
 
         if (!sunProjection) {
-            ShaderManager.INSTANCE.useShader("test");
-
             int rx = mc.resolution.width;
             int ry = mc.resolution.height;
             int sx = mc.resolution.scaledWidth;
@@ -113,18 +136,22 @@ public abstract class WorldRendererMixin {
             double esx = mc.resolution.scaledWidthExact;
             double esy = mc.resolution.scaledHeightExact;
 
-            int smRes = 2400;
+            realResX = mc.resolution.width;
+            realResY = mc.resolution.height;
+            
+            int smRes = Config.getShadowRes();
 
             if (!mainShadow.isGenerated()) {
-                mainShadow.setSize(smRes, smRes, false, true);
-                extendedShadow.setSize(smRes, smRes, false, false);
+                mainShadow.setSize(smRes, smRes, false, Config.checkPrecision(true));
+                extendedShadow.setSize(smRes, smRes, false, Config.checkPrecision(false));
             }
 
             ICamera camera = mc.activeCamera;
             if (camera instanceof SunCamera) {
                 camera = null;
             }
-            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer);
+            setupCamera(renderPartialTicks);
+            this.mc.activeCamera = new SunCamera(mc, mc.thePlayer, mc.activeCamera);
 
             RenderTarget[] framebuffers = new RenderTarget[]{
                     mainShadow, extendedShadow
@@ -147,6 +174,11 @@ public abstract class WorldRendererMixin {
 
             extended = false;
             for (RenderTarget framebuffer : framebuffers) {
+                if (!extended && !ShaderManager.INSTANCE.getCapabilities().usesMainShadow()) {
+                    extended = !extended;
+                    continue;
+                } else if (extended && !ShaderManager.INSTANCE.getCapabilities().usesExtendedShadow()) break;
+                
                 int q = extended ? 1 : 1;
                 mc.resolution.width = smRes / q;
                 mc.resolution.height = smRes / q;
