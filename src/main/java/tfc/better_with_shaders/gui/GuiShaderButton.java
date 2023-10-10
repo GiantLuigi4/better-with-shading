@@ -37,13 +37,11 @@ public class GuiShaderButton extends GuiButton {
             GL11.glEnable(3553);
         }
 
-        this.drawString(fontRenderer, name, this.xPosition + this.width / 2 - fontRenderer.getStringWidth(name) / 2, this.yPosition + 1, 16777215);
+        this.drawString(fontRenderer, name, this.xPosition + this.width / 2 - fontRenderer.getStringWidth(name) / 2, this.yPosition + 1 + fontRenderer.fontHeight / 2, 16777215);
         if (name.equals("Off")) {
-            this.drawString(fontRenderer, "No shaders; vanilla renderer", this.xPosition + this.width / 2 - fontRenderer.getStringWidth("No shaders; vanilla renderer") / 2, this.yPosition + 3 + fontRenderer.fontHeight, 8421504);
+            this.drawString(fontRenderer, "No shaders; vanilla renderer", this.xPosition + this.width / 2 - fontRenderer.getStringWidth("No shaders; vanilla renderer") / 2, this.yPosition + 3 + fontRenderer.fontHeight + fontRenderer.fontHeight / 2, 8421504);
         } else if (name.equals("Internal")) {
-            this.drawString(fontRenderer, "A mock up of the default shaders", this.xPosition + this.width / 2 - fontRenderer.getStringWidth("A mock up of the default shaders") / 2, this.yPosition + 4 + fontRenderer.fontHeight, 8421504);
+            this.drawString(fontRenderer, "A mock up of GL11's builtin shaders", this.xPosition + this.width / 2 - fontRenderer.getStringWidth("A mock up of GL11's builtin shaders") / 2, this.yPosition + 4 + fontRenderer.fontHeight + fontRenderer.fontHeight / 2, 8421504);
         }
-//        this.drawString(fontRenderer, this.texturePack.firstDescriptionLine, this.xPosition + this.height + 2, this.yPosition + 12, 8421504);
-//        this.drawString(fontRenderer, this.texturePack.secondDescriptionLine, this.xPosition + this.height + 2, this.yPosition + 22, 8421504);
     }
 }

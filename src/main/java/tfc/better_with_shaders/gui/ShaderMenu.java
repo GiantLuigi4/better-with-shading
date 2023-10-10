@@ -9,6 +9,7 @@ import net.minecraft.client.gui.options.GuiOptionsPageBase;
 import net.minecraft.client.option.GameSettings;
 import net.minecraft.client.render.texturepack.TexturePackBase;
 import net.minecraft.core.lang.I18n;
+import net.minecraft.core.util.helper.Color;
 import net.minecraft.core.util.helper.Utils;
 import tfc.better_with_shaders.ShaderManager;
 
@@ -37,18 +38,21 @@ public class ShaderMenu extends GuiOptionsPageBase {
 
     List<GuiShaderButton> texturePackButtons = new ArrayList();
 
+    int ttop;
+    int tbottom;
+
     @Override
     public void initGui() {
         this.controlList.clear();
         this.texturePackButtons.clear();
         super.initGui();
 
-        int top;
-
         try {
             Field f = GuiOptionsPageBase.class.getDeclaredField("top");
             f.setAccessible(true);
-            top = f.getInt(this);
+            ttop = f.getInt(this);
+            f = GuiOptionsPageBase.class.getDeclaredField("bottom");
+            tbottom = f.getInt(this);
         } catch (Throwable err) {
             throw new RuntimeException(err);
         }
@@ -61,10 +65,11 @@ public class ShaderMenu extends GuiOptionsPageBase {
         }
 
         I18n trans = I18n.getInstance();
-        this.btnOpenFolder = new GuiButton(1, this.width / 2 - 102, top + 4, 200 / 2, 20, trans.translateKey("options.button.openFolder"));
-        this.btnConfigure = new GuiButton(1, this.width / 2 + 2, top + 4, 200 / 2, 20, trans.translateKey("bws.options.button.config"));
+        this.btnOpenFolder = new GuiButton(1, this.width / 2 - 102, ttop + 4, 200 / 2, 20, trans.translateKey("options.button.openFolder"));
+        this.btnConfigure = new GuiButton(1, this.width / 2 + 2, ttop + 4, 200 / 2, 20, trans.translateKey("bws.options.button.config"));
         this.controlList.add(this.btnOpenFolder);
         this.controlList.add(this.btnConfigure);
+        btnConfigure.enabled = ShaderManager.INSTANCE.cfg.getCategory("options.toml") != null;
     }
 
     int mouseX, mouseY;
@@ -104,9 +109,52 @@ public class ShaderMenu extends GuiOptionsPageBase {
             File minecraftDir = Minecraft.getMinecraft(Minecraft.class).getMinecraftDir();
             Utils.openDirectory(new File(minecraftDir, "shader_packs"));
         } else if (guibutton == this.btnConfigure) {
-            // TODO
+            mc.displayGuiScreen(new OptionMenu(this));
         } else {
+            if (guibutton instanceof GuiShaderButton) {
+                ShaderManager.INSTANCE.useShader(((GuiShaderButton) guibutton).name);
+                btnConfigure.enabled = ShaderManager.INSTANCE.cfg.getCategory("options.toml") != null;
+            }
+        }
+    }
 
+    @Override
+    public void mouseClicked(int x, int y, int button) {
+        super.mouseClicked(x, y, button);
+        if (y > ttop && y < tbottom) {
+            for (GuiShaderButton texturePackButton : texturePackButtons) {
+                if (y > texturePackButton.yPosition && y < texturePackButton.yPosition + texturePackButton.height) {
+                    buttonPressed(texturePackButton);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void drawDefaultBackground() {
+        if (mc.currentScreen == this || mc.theWorld == null)
+            super.drawDefaultBackground();
+        else drawGameBg();
+    }
+
+    public void drawGameBg() {
+        int color = (this.mc.gameSettings.guiBackgroundColor.value).getARGB();
+        this.drawRect(0, 0, this.width, this.ttop, color);
+        this.drawRect(0, this.tbottom, this.width, this.height, color);
+
+        if (mc.currentScreen == this) {
+            this.drawRect(0, 0, this.width, this.ttop, 1593835520);
+            this.drawRect(0, this.tbottom, this.width, this.height, 1593835520);
+        }
+    }
+
+    public void drawOverlayBg() {
+        int color = (this.mc.gameSettings.guiBackgroundColor.value).getARGB();
+        this.drawRect(0, this.ttop, this.width, this.tbottom, color);
+
+        if (mc.currentScreen != this) {
+            this.drawRect(0, 0, this.width, this.ttop, 1593835520);
+            this.drawRect(0, this.tbottom, this.width, this.height, 1593835520);
         }
     }
 }

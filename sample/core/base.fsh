@@ -45,14 +45,9 @@ void main() {
 
     gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color * shadow;
 
-    float fc = gl_FogFragCoord;
-    fc /= 3.0;
-    fc *= gl_Fog.density;
-    fc = min(fc, 1);
-//    gl_FragColor = vec4(fc * gl_Fog.color.xyz, 1.0);
-
+    // apply fog
     gl_FragColor = vec4(
-            gl_FragColor.xyz * (1 - fc) + gl_Fog.color.xyz * fc,
+            gl_FragColor.xyz * (1 - gl_FogFragCoord) + gl_Fog.color.xyz * gl_FogFragCoord,
             gl_FragColor.a
     );
 }

@@ -55,7 +55,7 @@ public class ShaderManager {
 
     Processor[] processors;
 
-    ConfigLoader cfg = new ConfigLoader();
+    public final ConfigLoader cfg = new ConfigLoader();
 
     public ShaderManager() {
         if (!new File(shaderPackDir).exists())
@@ -142,7 +142,7 @@ public class ShaderManager {
     }
 
     public void init(TexturePackList list) {
-//        cfg.dump();
+        cfg.dump();
 
         if (DEFAULT != null) {
             DEFAULT.delete();
@@ -157,7 +157,7 @@ public class ShaderManager {
         base = list.selectedTexturePack;
         def = list.getDefaultTexturePack();
 
-        if (activePack.equals("none")) {
+        if (activePack.equals("Off")) {
             DEFAULT = null;
             ENTITY = null;
             FINAL = null;
@@ -165,28 +165,26 @@ public class ShaderManager {
             return;
         }
 
-        if (false) {
-            cfg.load((file) -> {
-                if (activePack.equals("internal")) return null;
+        cfg.load((file) -> {
+            if (activePack.equals("Internal")) return null;
 
-                File flf = new File(shaderPackDir + activePack + "/" + file);
-                if (flf.exists()) {
+            File flf = new File(shaderPackDir + activePack + "/" + file);
+            if (flf.exists()) {
+                try {
+                    FileInputStream fis = new FileInputStream(flf);
+                    byte[] data = new byte[fis.available()];
+                    fis.read(data);
                     try {
-                        FileInputStream fis = new FileInputStream(flf);
-                        byte[] data = new byte[fis.available()];
-                        fis.read(data);
-                        try {
-                            fis.close();
-                        } catch (Throwable ignored) {
-                        }
-                        return new String(data);
-                    } catch (Throwable err) {
-                        err.printStackTrace();
+                        fis.close();
+                    } catch (Throwable ignored) {
                     }
+                    return new String(data);
+                } catch (Throwable err) {
+                    err.printStackTrace();
                 }
-                return null;
-            });
-        }
+            }
+            return null;
+        });
 
         loadingCore = true;
         DEFAULT.compile(string -> this.readAndProcess(string, "base"), "base");

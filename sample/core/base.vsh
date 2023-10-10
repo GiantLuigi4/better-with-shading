@@ -21,4 +21,9 @@ void main() {
 
 	Color = gl_Color;
 	TexCoord = gl_MultiTexCoord0.xy;
+
+	gl_FogFragCoord = clamp(
+		(length(estimated) - gl_Fog.start) * gl_Fog.scale * gl_Fog.density,
+		0, 1
+	);
 }

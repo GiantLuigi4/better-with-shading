@@ -19,11 +19,15 @@ void main() {
 		return;
 	}
 
-	// TODO: per pixel fog
-//	float fc = gl_FragCoord.w / gl_DepthRange.diff - gl_DepthRange.near;
-////	fc += gl_Fog.start;
-////	fc *= gl_Fog.end - gl_Fog.start;
-//	fc = clamp(fc, 0, 1);
+	// deal with fog
+    float fc = gl_FogFragCoord;
+    fc = min(fc, 1);
 
+	// color&tex
 	gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color;
+	// fog
+	gl_FragColor = vec4(
+		gl_FragColor.xyz * (1 - fc) + gl_Fog.color.xyz * fc,
+		gl_FragColor.a
+	);
 }

@@ -4,11 +4,12 @@
   "package": "tfc.better_with_shaders.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "MenuCloseRedirectionCodeMixin"
   ],
   "client": [
-    "OptionsPageMixin",
     "FramebufferMixin",
     "GamelRendererMixin",
+    "OptionsPageMixin",
     "ShadersRendererMixin",
     "TexturePackListMixin",
     "WorldRendererMixin"
