@@ -19,15 +19,11 @@ void main() {
 		return;
 	}
 
-	// deal with fog
-    float fc = gl_FogFragCoord;
-    fc = min(fc, 1);
-
 	// color&tex
 	gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color;
 	// fog
 	gl_FragColor = vec4(
-		gl_FragColor.xyz * (1 - fc) + gl_Fog.color.xyz * fc,
+		gl_FragColor.xyz * (1 - gl_FogFragCoord) + gl_Fog.color.xyz * gl_FogFragCoord,
 		gl_FragColor.a
 	);
 }
