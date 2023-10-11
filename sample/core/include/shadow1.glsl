@@ -13,6 +13,7 @@ vec4 softPenumbra(vec4 fragPosLightSpace) {
     float averageShadow = 0.0;
 
     float penumbraBias = projCoords.z;
+    penumbraBias = 1 - penumbraBias;
     penumbraBias *= penumbraBias;
 
     float s0 = float(int(PENUMBRA_STEPS * penumbraBias));
@@ -26,7 +27,7 @@ vec4 softPenumbra(vec4 fragPosLightSpace) {
 
         for (int i = 0; i < s0; i++) {
             float closestDepth = sampleShadow(
-            projCoords.xy + vec2(c * texel, s * texel) * (i / max(1.0, s0 - 1.0))
+                projCoords.xy + vec2(c * texel, s * texel) * (i / max(1.0, s0 - 1.0))
             );
             averageShadow += currentDepth - shadow_bias > closestDepth ? 0.0 : 1.0;
         }

@@ -20,7 +20,7 @@ import java.util.List;
 
 public class ShaderMenu extends GuiOptionsPageBase {
     GuiButton btnOpenFolder = null, btnConfigure = null;
-    String[] shaderPackList = new File(shaderPackDir).list();
+    String[] shaderPackList = new File(shaderPackDir).list((fl, n) -> new File(fl + "/" + n).isDirectory());
 
     public ShaderMenu(GuiScreen parent, GameSettings settings) {
         super(parent, settings);
@@ -109,7 +109,7 @@ public class ShaderMenu extends GuiOptionsPageBase {
             File minecraftDir = Minecraft.getMinecraft(Minecraft.class).getMinecraftDir();
             Utils.openDirectory(new File(minecraftDir, "shader_packs"));
         } else if (guibutton == this.btnConfigure) {
-            mc.displayGuiScreen(new OptionMenu(this));
+            mc.displayGuiScreen(new OptionMenu(this, ShaderManager.INSTANCE.cfg.getCategory("options.toml")));
         } else {
             if (guibutton instanceof GuiShaderButton) {
                 ShaderManager.INSTANCE.useShader(((GuiShaderButton) guibutton).name);

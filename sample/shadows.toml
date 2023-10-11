@@ -1,4 +1,8 @@
 [left]
+    [left.use_shadows]
+        boolean = "USE_SHADOWS"
+        name = "Enable Shadows"
+        default = true
     [left.soft_shadows]
         boolean = "SOFT_PENUMUBRA"
         name = "Smooth Shadows"

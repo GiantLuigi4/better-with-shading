@@ -14,6 +14,7 @@ uniform int flags;
 
 // -- CONFIG -- //
 #config
+    #define USE_SHADOWS
     #define SOFT_PENUMUBRA
     #define SHADOW_BRIGHTNESSS 0.65
     #define PENUMBRA_STEPS 16
@@ -36,11 +37,15 @@ void main() {
     }
 
     vec4 shadow;
-    #ifdef SOFT_PENUMUBRA
-        vec3 projCoords = SunCoord.xyz / SunCoord.w;
-        shadow = softPenumbra(SunCoord);
+    #ifdef USE_SHADOWS
+        #ifdef SOFT_PENUMUBRA
+            vec3 projCoords = SunCoord.xyz / SunCoord.w;
+            shadow = softPenumbra(SunCoord);
+        #else
+            shadow = hardPenumbra(SunCoord);
+        #endif
     #else
-        shadow = hardPenumbra(SunCoord);
+        shadow = vec4(1.0);
     #endif
 
     gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color * shadow;

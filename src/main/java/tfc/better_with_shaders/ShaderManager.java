@@ -21,12 +21,14 @@ import tfc.better_with_shaders.preprocessor.config.ConfigLoader;
 import tfc.better_with_shaders.util.FramebufferAccessor;
 import tfc.better_with_shaders.util.RenderTarget;
 import tfc.better_with_shaders.util.RendererExtensions;
+import turniplabs.halplibe.util.ConfigHandler;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
+import java.util.Properties;
 
 public class ShaderManager {
     private static final String shaderPackDir = FabricLoader.getInstance().getGameDir() + "/shader_packs/";
@@ -77,7 +79,7 @@ public class ShaderManager {
                 Config.writeConfig();
             }
         } else activePack = name;
-        init(mc.texturePackList);
+        init(mc.texturePackList, true);
     }
 
     boolean loadingCore = true;
@@ -141,13 +143,12 @@ public class ShaderManager {
         return txt;
     }
 
-    public void init(TexturePackList list) {
-        cfg.dump();
+    public void init(TexturePackList list, boolean loadConfig) {
+        if (loadConfig)
+            cfg.dump();
 
         if (DEFAULT != null) {
-            DEFAULT.delete();
-            ENTITY.delete();
-            FINAL.delete();
+            for (Shader shader : allShaders()) shader.delete();
         } else {
             DEFAULT = new Shader();
             ENTITY = new Shader();
@@ -165,26 +166,30 @@ public class ShaderManager {
             return;
         }
 
-        cfg.load((file) -> {
-            if (activePack.equals("Internal")) return null;
+        if (loadConfig) {
+            cfg.load((file) -> {
+                if (activePack.equals("Internal")) return null;
 
-            File flf = new File(shaderPackDir + activePack + "/" + file);
-            if (flf.exists()) {
-                try {
-                    FileInputStream fis = new FileInputStream(flf);
-                    byte[] data = new byte[fis.available()];
-                    fis.read(data);
+                File flf = new File(shaderPackDir + activePack + "/" + file);
+                if (flf.exists()) {
                     try {
-                        fis.close();
-                    } catch (Throwable ignored) {
+                        FileInputStream fis = new FileInputStream(flf);
+                        byte[] data = new byte[fis.available()];
+                        fis.read(data);
+                        try {
+                            fis.close();
+                        } catch (Throwable ignored) {
+                        }
+                        return new String(data);
+                    } catch (Throwable err) {
+                        err.printStackTrace();
                     }
-                    return new String(data);
-                } catch (Throwable err) {
-                    err.printStackTrace();
                 }
-            }
-            return null;
-        });
+                return null;
+            });
+
+            loadConfig();
+        }
 
         loadingCore = true;
         DEFAULT.compile(string -> this.readAndProcess(string, "base"), "base");
@@ -220,7 +225,7 @@ public class ShaderManager {
 
     public void useFirstShader(TexturePackList list, String name) {
         activePack = name;
-        init(list);
+        init(list, true);
     }
 
     protected final ShaderCapabilities capabilities = new ShaderCapabilities();
@@ -315,9 +320,7 @@ public class ShaderManager {
 
             if (uform != -1) {
                 float celestialAngle = mc.theWorld.getCelestialAngle(0);
-                if (celestialAngle * 360 > 90) {
-                    celestialAngle += 90 / 180f;
-                }
+                celestialAngle += 90 / 180f;
                 celestialAngle = (float) Math.toRadians(celestialAngle * 360);
 
                 GL20.glUniform3f(uform,
@@ -413,10 +416,45 @@ public class ShaderManager {
     }
 
     public void reloadShader() {
-        init(mc.texturePackList);
+        init(mc.texturePackList, false);
     }
 
     public String activeShader() {
         return activePack;
+    }
+
+    public void loadConfig() {
+        if (new File(shaderPackDir + "/" + activePack + ".cfg").exists()) {
+            Properties properties = new Properties();
+            this.cfg.values.forEach((k, v) -> {
+                properties.put(k, String.valueOf(v));
+            });
+
+            ConfigHandler hndlr = new ConfigHandler("../shader_packs/" + activePack, properties);
+            this.cfg.values.forEach((k, v) -> {
+                if (properties.containsKey(k)) {
+                    try {
+                        if (v.getClass().equals(Boolean.class)) {
+                            this.cfg.values.replace(k, Boolean.parseBoolean(hndlr.getString(k)));
+                        } else if (v.getClass().equals(Float.class)) {
+                            this.cfg.values.replace(k, Float.parseFloat(hndlr.getString(k)));
+                        } else if (v.getClass().equals(Integer.class)) {
+                            this.cfg.values.replace(k, Integer.parseInt(hndlr.getString(k)));
+                        }
+                    } catch (Throwable err) {
+                        err.printStackTrace();
+                    }
+                }
+            });
+        }
+    }
+
+    public void saveConfig() {
+        Properties properties = new Properties();
+        ConfigHandler cfg = new ConfigHandler("../shader_packs/" + activePack, properties);
+        this.cfg.values.forEach((k, v) -> {
+            properties.put(k, String.valueOf(v));
+        });
+        cfg.writeDefaultConfig();
     }
 }

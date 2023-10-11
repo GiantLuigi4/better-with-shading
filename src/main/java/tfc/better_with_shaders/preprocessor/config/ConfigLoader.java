@@ -9,6 +9,8 @@ import java.util.function.Function;
 
 public class ConfigLoader {
     public final HashMap<String, Object> values = new HashMap<>();
+    public final HashMap<String, Object> mins = new HashMap<>();
+    public final HashMap<String, Object> maxes = new HashMap<>();
 
     public void dump() {
         values.clear();
@@ -49,7 +51,7 @@ public class ConfigLoader {
                             if (entry.contains("category")) {
                                 String file = entry.get("category", String.class);
                                 load(file, reader);
-                                cfgCategory.displayToInternal.put(display, null);
+                                cfgCategory.displayToInternal.put(display, file);
                             } else if (entry.contains("boolean")) {
                                 String sdrName = entry.get("boolean", String.class);
                                 values.put(sdrName, entry.get("default", Boolean.class));
@@ -57,10 +59,26 @@ public class ConfigLoader {
                             } else if (entry.contains("float")) {
                                 String sdrName = entry.get("float", String.class);
                                 values.put(sdrName, entry.get("default", Float.class));
+
+                                if (entry.contains("min"))
+                                    mins.put(sdrName, entry.get("min", Float.class));
+                                else mins.put(sdrName, 0.0f);
+                                if (entry.contains("max"))
+                                    maxes.put(sdrName, entry.get("max", Float.class));
+                                else maxes.put(sdrName, 1.0f);
+
                                 cfgCategory.displayToInternal.put(display, sdrName);
                             } else if (entry.contains("integer")) {
                                 String sdrName = entry.get("integer", String.class);
                                 values.put(sdrName, entry.get("default", Integer.class));
+
+                                if (entry.contains("min"))
+                                    mins.put(sdrName, entry.get("min", Integer.class));
+                                else mins.put(sdrName, 0);
+                                if (entry.contains("max"))
+                                    maxes.put(sdrName, entry.get("max", Integer.class));
+                                else maxes.put(sdrName, 1);
+
                                 cfgCategory.displayToInternal.put(display, sdrName);
                             }
                             list.add(display);

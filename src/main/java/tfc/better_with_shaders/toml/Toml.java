@@ -27,7 +27,23 @@ public class Toml {
             }
             return (T) categories.get(key.substring(1));
         } else {
-            return (T) entries.get(key).getT();
+            Object value = entries.get(key).getT();
+
+            if (clazz.equals(Float.class)) return (T) (Float) ((Number) value).floatValue();
+            if (clazz.equals(Double.class)) return (T) (Double) ((Number) value).doubleValue();
+            if (clazz.equals(Long.class)) return (T) (Long) (((Number) value).longValue());
+            if (clazz.equals(Integer.class)) return (T) (Integer) (((Number) value).intValue());
+            if (clazz.equals(Short.class)) return (T) (Short) (((Number) value).shortValue());
+            if (clazz.equals(Byte.class)) return (T) (Byte) (((Number) value).byteValue());
+
+            if (clazz.equals(float.class)) return (T) (Float) ((Number) value).floatValue();
+            if (clazz.equals(double.class)) return (T) (Double) ((Number) value).doubleValue();
+            if (clazz.equals(long.class)) return (T) (Long) (((Number) value).longValue());
+            if (clazz.equals(int.class)) return (T) (Integer) (((Number) value).intValue());
+            if (clazz.equals(short.class)) return (T) (Short) (((Number) value).shortValue());
+            if (clazz.equals(byte.class)) return (T) (Byte) (((Number) value).byteValue());
+
+            return (T) value;
         }
     }
 
