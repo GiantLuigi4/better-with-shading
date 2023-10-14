@@ -1,6 +1,6 @@
 #version 120
-// required for matrix math functions
-#extension GL_ARB_gpu_shader5 : enable
+// matrix math functions
+#include <matrices.glsl>
 
 varying vec2 TexCoord;
 varying vec4 Color;

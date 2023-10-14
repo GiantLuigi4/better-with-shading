@@ -1,8 +1,8 @@
 #version 120
 // required for bitwise operations
 #extension GL_EXT_gpu_shader4: enable
-// required for matrix math functions
-#extension GL_ARB_gpu_shader5: enable
+// matrix math functions
+#include <matrices.glsl>
 
 uniform sampler2D colortex0;
 varying vec2 TexCoord;
