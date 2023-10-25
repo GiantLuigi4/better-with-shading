@@ -31,6 +31,7 @@ void main() {
     // this allows for ignoring per-chunk quad sorting
     if ((flags & 1) == 1) discard;
     // flag: shadow, no point in processing shadows if you're in the process of drawing the shadow map(s)
+    // fog should also be disabled in the shadow pass due to colored shadows
     if ((flags & 2) == 2) {
         gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color;
         return;

@@ -11,6 +11,14 @@ uniform mat4 camMatrix;
 uniform mat4 sunCameraMatrix;
 uniform mat4 sunProjectionMatrix;
 
+// define input variables
+// will be used later for VOB compat, mostly for instanced rendering
+//#inputs
+	#define position gl_Vertex
+	#define color gl_Color
+	#define texture gl_MultiTexCoord0
+//#endinputs
+
 void main() {
 	// gives more control than ftransform()
 	vec4 estimated = vec4(gl_Vertex.xyz, 1.0) * gl_ModelViewMatrixTranspose;

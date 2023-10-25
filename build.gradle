@@ -97,6 +97,9 @@ dependencies {
 	implementation("org.apache.logging.log4j:log4j-core:${log4jVersion}")
 	implementation("org.apache.logging.log4j:log4j-api:${log4jVersion}")
 	implementation("org.apache.logging.log4j:log4j-1.2-api:${log4jVersion}")
+
+	implementation files("libs/vob-1.0.0.jar")
+	implementation files("libs/vob-1.0.0-sources.jar")
 }
 
 java {

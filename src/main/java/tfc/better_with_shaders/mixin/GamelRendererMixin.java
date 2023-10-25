@@ -88,14 +88,14 @@ public class GamelRendererMixin implements GameRendererExtensions {
         if (!ShaderManager.INSTANCE.shadersActive()) return;
 
         ShaderManager.INSTANCE.getDefaultShader().bind();
-        setupPass(0, ShaderManager.INSTANCE.getDefaultShader());
+        setupPass(renderPass, ShaderManager.INSTANCE.getDefaultShader());
     }
 
     @Inject(at = @At("RETURN"), method = "sortAndRender")
     public void postSort(ICamera camera, int renderPass, double renderPartialTicks, CallbackInfoReturnable<Integer> cir) {
         if (!ShaderManager.INSTANCE.shadersActive()) return;
 
-        endRenderPass(0, ShaderManager.INSTANCE.getDefaultShader());
+        endRenderPass(renderPass, ShaderManager.INSTANCE.getDefaultShader());
         ShaderManager.INSTANCE.getDefaultShader().unbind();
     }
 

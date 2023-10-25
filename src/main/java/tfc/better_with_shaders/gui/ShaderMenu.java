@@ -52,6 +52,7 @@ public class ShaderMenu extends GuiOptionsPageBase {
             f.setAccessible(true);
             ttop = f.getInt(this);
             f = GuiOptionsPageBase.class.getDeclaredField("bottom");
+            f.setAccessible(true);
             tbottom = f.getInt(this);
         } catch (Throwable err) {
             throw new RuntimeException(err);
@@ -82,6 +83,14 @@ public class ShaderMenu extends GuiOptionsPageBase {
 
     @Override
     protected void drawPageItems(int x, int y, int width) {
+        if (btnOpenFolder == null) {
+            Minecraft mc = Minecraft.getMinecraft(Minecraft.class);
+            setWorldAndResolution(
+                    mc,
+                    mc.resolution.width, mc.resolution.height
+            );
+        }
+
         this.btnOpenFolder.yPosition = y + 4;
         int previousHeights = y + 4 + 20 + 6;
 
