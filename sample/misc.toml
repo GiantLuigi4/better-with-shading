@@ -23,3 +23,12 @@
     boolean = "DISPLAY_DEPTH"
     name = "Depth Buffer"
     default = false
+  [right.draw_norms]
+    boolean = "DISPLAY_NORMALS"
+    name = "Display Normals"
+    default = false
+
+  [right.classic_fog]
+    boolean = "PLANAR_FOG"
+    name = "Classic Fog"
+    default = false

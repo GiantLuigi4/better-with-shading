@@ -25,7 +25,7 @@ void main() {
 
 	// fog
 	gl_FogFragCoord = clamp(
-		(length(estimated) - gl_Fog.start) * gl_Fog.scale * gl_Fog.density,
+		(length(estimated.z) - gl_Fog.start) * gl_Fog.scale * gl_Fog.density,
 		0, 1
 	);
 }

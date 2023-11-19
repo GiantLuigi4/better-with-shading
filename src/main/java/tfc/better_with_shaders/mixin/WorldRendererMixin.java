@@ -35,7 +35,8 @@ public abstract class WorldRendererMixin {
     @Shadow
     protected abstract void setupCameraTransform(float renderPartialTicks);
 
-    @Shadow private float farPlaneDistance;
+    @Shadow
+    private float farPlaneDistance;
 
     @Redirect(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/RenderGlobal;callAllDisplayLists(ID)V"), require = 0)
     public void itsAlreadyCalled(RenderGlobal instance, int pass, double pct) {
@@ -68,18 +69,18 @@ public abstract class WorldRendererMixin {
             div *= mc.resolution.width / 2400;
             if (extended) div /= 8;
             GL11.glOrtho(
-                    -(double)this.mc.resolution.width / div, (double)this.mc.resolution.width / div,
-                    -(double)this.mc.resolution.height / div, (double)this.mc.resolution.height / div,
+                    -(double) this.mc.resolution.width / div, (double) this.mc.resolution.width / div,
+                    -(double) this.mc.resolution.height / div, (double) this.mc.resolution.height / div,
                     2, this.farPlaneDistance * 3.0F
             );
         } else {
             GLU.gluPerspective(fovy, aspect, zNear, zFar);
         }
     }
-    
+
     int realResX = 0;
     int realResY = 0;
-    
+
     // TODO: this isn't working properly
     @Redirect(at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glOrtho(DDDDDD)V"), method = "setupCameraTransform")
     public void noPerspective(double left, double right, double bottom, double top, double zNear, double zFar) {
@@ -87,8 +88,8 @@ public abstract class WorldRendererMixin {
         if (extended) div /= 8;
         if (sunProjection) {
             GL11.glOrtho(
-                    0, (double)realResX / div,
-                    0, (double)realResY / div,
+                    0, (double) realResX / div,
+                    0, (double) realResY / div,
                     2, this.farPlaneDistance * 3.0F
             );
         } else {
@@ -124,6 +125,8 @@ public abstract class WorldRendererMixin {
     RenderTarget mainShadow = new RenderTarget();
     RenderTarget extendedShadow = new RenderTarget();
 
+    int frame = 0;
+
     @Inject(at = @At("HEAD"), method = "renderWorld")
     public void preDrawWorld(float renderPartialTicks, long updateRenderersUntil, CallbackInfo ci) {
 //        if (!sunProjection) {
@@ -142,7 +145,7 @@ public abstract class WorldRendererMixin {
 
             realResX = mc.resolution.width;
             realResY = mc.resolution.height;
-            
+
             int smRes = Config.getShadowRes();
 
             if (!mainShadow.isGenerated()) {
@@ -151,9 +154,9 @@ public abstract class WorldRendererMixin {
             }
 
             ICamera camera = mc.activeCamera;
-            if (camera instanceof SunCamera) {
+            if (camera instanceof SunCamera)
                 camera = null;
-            }
+
             setupCamera(renderPartialTicks);
             this.mc.activeCamera = new SunCamera(mc, mc.thePlayer, mc.activeCamera);
 
@@ -176,13 +179,14 @@ public abstract class WorldRendererMixin {
             ShaderManager.INSTANCE.extractSun(true, smRes, extendedShadow);
             GL11.glPopMatrix();
 
+            GL11.glCullFace(GL11.GL_FRONT);
             extended = false;
             for (RenderTarget framebuffer : framebuffers) {
                 if (!extended && !ShaderManager.INSTANCE.getCapabilities().usesMainShadow()) {
                     extended = !extended;
                     continue;
                 } else if (extended && !ShaderManager.INSTANCE.getCapabilities().usesExtendedShadow()) break;
-                
+
                 int q = extended ? 1 : 1;
                 mc.resolution.width = smRes / q;
                 mc.resolution.height = smRes / q;
@@ -190,7 +194,6 @@ public abstract class WorldRendererMixin {
                 mc.resolution.scaledHeight = smRes / q;
                 mc.resolution.scaledWidthExact = smRes / (double) q;
                 mc.resolution.scaledHeightExact = smRes / (double) q;
-
                 framebuffer.bind();
                 GL11.glViewport(0, 0, smRes / q, smRes / q);
                 GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
@@ -199,6 +202,7 @@ public abstract class WorldRendererMixin {
 
                 extended = !extended;
             }
+            GL11.glCullFace(GL11.GL_BACK);
             ((GameRendererExtensions) mc.renderGlobal).swapRender();
             ((RendererExtensions) mc.render).rebind();
             sunProjection = false;
@@ -216,6 +220,8 @@ public abstract class WorldRendererMixin {
             GL11.glViewport(0, 0, width, height);
 
             mc.activeCamera = camera;
+
+            frame++;
         }
     }
 }

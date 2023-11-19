@@ -1,4 +1,4 @@
-#version 120
+#version 130
 // required for bitwise operations
 #extension GL_EXT_gpu_shader4: enable
 // matrix math functions
@@ -12,20 +12,6 @@ varying vec4 SunCoord;
 
 uniform int flags;
 
-// -- CONFIG -- //
-#config
-    #define USE_SHADOWS
-    #define SOFT_PENUMUBRA
-    #define SHADOW_BRIGHTNESSS 0.65
-    #define PENUMBRA_STEPS 16
-    #define PENUMBRA_ROUNDNESS 8
-#endconfig
-
-// -- CONSTANTS -- //
-#define shadow_bias 0.00005
-#include <shadow.glsl>
-#include <shadow1.glsl>
-
 void main() {
     // flag: discard, used for fancy graphics for transparent blocks
     // this allows for ignoring per-chunk quad sorting
@@ -37,19 +23,7 @@ void main() {
         return;
     }
 
-    vec4 shadow;
-    #ifdef USE_SHADOWS
-        #ifdef SOFT_PENUMUBRA
-            vec3 projCoords = SunCoord.xyz / SunCoord.w;
-            shadow = softPenumbra(SunCoord);
-        #else
-            shadow = hardPenumbra(SunCoord);
-        #endif
-    #else
-        shadow = vec4(1.0);
-    #endif
-
-    gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color * shadow;
+    gl_FragColor = texture2D(colortex0, TexCoord.xy).rgba * Color;
 
     // apply fog
     gl_FragColor = vec4(
