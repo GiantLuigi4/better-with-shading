@@ -1,4 +1,3 @@
-#line 1
 uniform int shadowResolution;
 uniform sampler2D shadowMap0;
 uniform sampler2D shadowMap1;
@@ -13,7 +12,7 @@ float sampleShadow(vec2 crd) {
         return texture2D(shadowMap1, crd).r;
     }
 
-    return texelFetch(shadowMap0, ivec2(crd * textureSize(shadowMap0, 0)), 0).r;
+    return texture2D(shadowMap0, crd).r;
 }
 
 // https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping

@@ -17,13 +17,13 @@ public class RenderTarget {
     public void setSize(int width, int height, boolean color, boolean highP) {
         this.fbo.generate();
 
-        int filterMode = GL11.GL_LINEAR;
+        int filterMode = GL11.GL_NEAREST;
 
         this.fbo.bind();
         if (color) {
             this.tex.generate();
             this.tex.bind();
-            GL11.glTexImage2D(3553, 0, 6408, width, height, 0, 6408, 5121, (ByteBuffer) ((ByteBuffer) null));
+            GL11.glTexImage2D(3553, 0, 6408, width, height, 0, 6408, 5121, (ByteBuffer) null);
             GL11.glTexParameteri(3553, 10241, filterMode);
             GL11.glTexParameteri(3553, 10240, filterMode);
             GL11.glTexParameteri(3553, 10242, 10496);
@@ -32,7 +32,7 @@ public class RenderTarget {
         }
         this.depth.generate();
         this.depth.bind();
-        GL11.glTexImage2D(3553, 0, highP ? GL30.GL_DEPTH_COMPONENT32F : 6402, width, height, 0, 6402, 5121, (ByteBuffer) ((ByteBuffer) null));
+        GL11.glTexImage2D(3553, 0, highP ? GL30.GL_DEPTH_COMPONENT32F : 6402, width, height, 0, 6402, 5121, (ByteBuffer) null);
         GL11.glTexParameteri(3553, 10241, filterMode);
         GL11.glTexParameteri(3553, 10240, filterMode);
         GL11.glTexParameteri(3553, 10242, 10496);

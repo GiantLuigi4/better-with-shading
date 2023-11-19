@@ -1,4 +1,3 @@
-#line 1
 float calcBias(vec3 normal, vec3 sunDir) {
     float bias = 0.00001;
 

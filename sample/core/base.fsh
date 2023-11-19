@@ -1,4 +1,4 @@
-#version 130
+#version 120
 // required for bitwise operations
 #extension GL_EXT_gpu_shader4: enable
 // matrix math functions

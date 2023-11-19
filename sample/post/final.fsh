@@ -1,4 +1,4 @@
-#version 130
+#version 120
 
 #include <matrices.glsl>
 #include <post_utils.glsl>
@@ -56,7 +56,6 @@ uniform mat4 projectionMatrix;
 uniform mat4 sunCameraMatrix;
 uniform mat4 sunProjectionMatrix;
 
-#line 59
 void main(){
 	vec3 color = texture2D(colortex0, texcoord).rgb;
 
